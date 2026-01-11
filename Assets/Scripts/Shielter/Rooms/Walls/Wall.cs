@@ -1,144 +1,293 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(BoxCollider2D))]
-[RequireComponent(typeof(SpriteRenderer))]
 public class Wall : MonoBehaviour
 {
     public WallState state = WallState.Exterior;
     public WallType wallType;
 
-    public Sprite exteriorSprite;
-    public Sprite interiorSprite;
+    [Header("Tiling fixes")]
+    public bool rotateTilesOnVerticalWalls = true;
+    public bool snapTilesToPixelGrid = true;
+
+
+    [Header("Tile visuals (Option 2)")]
+    public Sprite wallTileSprite;              // <- sprite pojedynczego kafla ściany
+    public bool autoTileSizeFromSprite = false;
+    public float tileSizeWorld = 1f;           // <- ustaw na 1 jeśli 1 tile = 1 unit
+    public int sortingOrder = 10;
+    public Color tileColor = Color.white;
+
+    [Header("Hide base stretched sprite")]
+    public bool hideBaseSpriteWhenTiling = true;
 
     private BoxCollider2D mainCol;
-    private SpriteRenderer sr;
+    private Transform visualsRoot;
 
     void Awake()
     {
-        mainCol = GetComponent<BoxCollider2D>();
-        sr      = GetComponent<SpriteRenderer>();
+        EnsureMainCol("Awake");
+        EnsureVisualsRoot();
 
-        if (exteriorSprite != null)
-            sr.sprite = exteriorSprite;
+        if (autoTileSizeFromSprite && wallTileSprite != null)
+        {
+            // pewniejsze auto: rozmiar sprite w unitach
+            float w = wallTileSprite.rect.width / wallTileSprite.pixelsPerUnit;
+            float h = wallTileSprite.rect.height / wallTileSprite.pixelsPerUnit;
+            tileSizeWorld = Mathf.Max(0.0001f, Mathf.Min(w, h));
+        }
 
-        SyncColliderToSprite();
+        ApplyBaseSpriteVisibility();
+        RebuildVisuals();
     }
 
-    /// Dopasuj BoxCollider2D do sprite'a (uwzględniając skalę obiektu).
-    void SyncColliderToSprite()
+    void EnsureVisualsRoot()
     {
-        if (sr.sprite == null) return;
+        var existing = transform.Find("Visuals");
+        if (existing != null)
+        {
+            visualsRoot = existing;
+            return;
+        }
 
-        // rozmiar sprita w świecie
-        Vector2 worldSize = sr.bounds.size;
+        visualsRoot = new GameObject("Visuals").transform;
+        visualsRoot.SetParent(transform, false);
+        visualsRoot.localPosition = Vector3.zero;
+    }
 
-        // skala obiektu
-        Vector3 lossy = transform.lossyScale;
+    void ApplyBaseSpriteVisibility()
+    {
+        if (!hideBaseSpriteWhenTiling) return;
 
-        // konwersja na local space
-        float localW = worldSize.x / Mathf.Max(Mathf.Abs(lossy.x), 0.0001f);
-        float localH = worldSize.y / Mathf.Max(Mathf.Abs(lossy.y), 0.0001f);
+        var sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            // chowamy rozciągnięty sprite, jeśli mamy tile sprite
+            sr.enabled = (wallTileSprite == null);
+        }
+    }
 
-        mainCol.size   = new Vector2(localW, localH);
-        mainCol.offset = Vector2.zero;
+    void EnsureMainCol(string from)
+    {
+        if (mainCol == null)
+            mainCol = GetComponent<BoxCollider2D>();
+
+        if (mainCol == null)
+            Debug.LogError($"[Wall EnsureMainCol FAIL] ({from}) {transform.root.name}/{name} - brak BoxCollider2D!");
+    }
+
+    bool DoorAlreadyBuilt()
+    {
+        EnsureMainCol("DoorAlreadyBuilt");
+        var cols = GetComponents<BoxCollider2D>();
+        return (mainCol != null && !mainCol.enabled) || cols.Length > 1;
     }
 
     public void MakeInterior()
     {
-        if (mainCol == null) mainCol = GetComponent<BoxCollider2D>();
+        EnsureMainCol("MakeInterior");
 
-        if (state == WallState.Interior)
+        int colsBefore = GetComponents<BoxCollider2D>().Length;
+        bool mainEnabled = mainCol != null && mainCol.enabled;
+
+        Debug.Log($"[MakeInterior] {transform.root.name}/{name} state={state} colsBefore={colsBefore} mainColEnabled={mainEnabled}");
+
+        if (DoorAlreadyBuilt())
+        {
+            Debug.Log($"[MakeInterior SKIP] {transform.root.name}/{name} already has door");
             return;
+        }
 
         state = WallState.Interior;
 
-        float doorHeightWorld = GetDoorHeightFromPlayer();
+        float doorWorld = GetDoorSizeWorld();
+        Debug.Log($"[MakeInterior] {transform.root.name}/{name} building doorWorld={doorWorld}");
 
         if (wallType == WallType.Left || wallType == WallType.Right)
-        {
-            CreateVerticalDoor(doorHeightWorld);
-        }
+            CreateVerticalDoor_FromBottom(doorWorld);   // OD DOŁU
         else
-        {
-            CreateHorizontalDoor(doorHeightWorld);
-        }
+            CreateHorizontalDoor_Centered(doorWorld);
 
-        if (interiorSprite != null)
-            sr.sprite = interiorSprite;
+        Physics2D.SyncTransforms();
+
+        ApplyBaseSpriteVisibility();
+        RebuildVisuals();
+
+        int colsAfter = GetComponents<BoxCollider2D>().Length;
+        Debug.Log($"[MakeInterior DONE] {transform.root.name}/{name} colsAfter={colsAfter}");
     }
 
-    float GetDoorHeightFromPlayer()
+    float GetDoorSizeWorld()
     {
         var player = FindAnyObjectByType<PlayerMovement>();
-        if (player == null) 
-            return mainCol.bounds.size.y * 0.4f;
+        if (player && player.TryGetComponent<BoxCollider2D>(out var pCol))
+            return pCol.bounds.size.y * 2f;
 
-        if (!player.TryGetComponent<BoxCollider2D>(out var pCol))
-            return mainCol.bounds.size.y * 0.4f;
-
-        return pCol.bounds.size.y * 2f;   // „2x wysokość gracza”
+        EnsureMainCol("GetDoorSizeWorld");
+        return mainCol.bounds.size.y * 0.4f;
     }
 
-    // ------- PIONOWE DRZWI (lewa/prawa ściana) -------
+    // ======================================================
+    // VISUALS – kafelki generowane deterministycznie po colliderach
+    // ======================================================
 
-void CreateVerticalDoor(float doorHeightWorld)
+    void RebuildVisuals()
+    {
+        if (visualsRoot == null) return;
+
+        // usuń stare kafle
+        for (int i = visualsRoot.childCount - 1; i >= 0; i--)
+        {
+            if (Application.isPlaying) Destroy(visualsRoot.GetChild(i).gameObject);
+            else DestroyImmediate(visualsRoot.GetChild(i).gameObject);
+        }
+
+        if (wallTileSprite == null || tileSizeWorld <= 0.0001f)
+            return;
+
+        var cols = GetComponents<BoxCollider2D>();
+        if (cols == null || cols.Length == 0)
+            return;
+
+        foreach (var c in cols)
+        {
+            if (c == null || !c.enabled) continue;
+            BuildTilesForCollider(c);
+        }
+    }
+
+ void BuildTilesForCollider(BoxCollider2D col)
 {
-    float full = mainCol.size.y;           // np. 12
-    float thick = mainCol.size.x;
+    bool vertical = col.size.y >= col.size.x;
 
-    float doorH = doorHeightWorld / transform.localScale.y;
+    // długość collidera w LOCAL
+    float lengthLocal = vertical ? col.size.y : col.size.x;
 
-    float topSeg = Mathf.Max(0, full - doorH);
+    // tileSizeWorld -> tileSizeLocal (uwzględnij skalę obiektu)
+    float axisScale = vertical ? Mathf.Abs(transform.lossyScale.y) : Mathf.Abs(transform.lossyScale.x);
+    axisScale = Mathf.Max(axisScale, 0.0001f);
+    float tileSizeLocal = tileSizeWorld / axisScale;
 
-    mainCol.enabled = false;
+    // zakres pozycji środków kafli tak, żeby kafel NIE wyszedł poza collider
+    float min = -lengthLocal * 0.5f + tileSizeLocal * 0.5f;
+    float max =  lengthLocal * 0.5f - tileSizeLocal * 0.5f;
 
-    // ---- GÓRA ŚCIANY ----
-    var top = gameObject.AddComponent<BoxCollider2D>();
-    top.size = new Vector2(thick, topSeg);
+    // jeśli collider jest krótszy niż kafel -> 1 kafel
+    if (max < min)
+    {
+        Vector2 localPos1 = vertical
+            ? new Vector2(col.offset.x, col.offset.y)
+            : new Vector2(col.offset.x, col.offset.y);
 
-    // offset liczymy OD DOŁU, nie od środka!
-    float bottomY = -full / 2f;  // np. -6
+        Vector3 w1 = transform.TransformPoint(localPos1);
+        CreateTile(w1, (vertical && rotateTilesOnVerticalWalls) ? Quaternion.Euler(0,0,90f) : Quaternion.identity);
+        return;
+    }
 
-    float topOffset = bottomY + doorH + (topSeg / 2f);
+    float span = max - min;
 
-    top.offset = new Vector2(0, topOffset);
+    // count tak, by krok <= tileSizeLocal (żeby NIE było dziur),
+    // a końce zawsze były trafione min i max
+    int count = Mathf.CeilToInt(span / tileSizeLocal) + 1;
+    count = Mathf.Max(2, count);
+
+    float step = span / (count - 1); // <= tileSizeLocal
+
+    Quaternion rot = Quaternion.identity;
+    if (vertical && rotateTilesOnVerticalWalls)
+        rot = Quaternion.Euler(0, 0, 90f);
+
+    for (int i = 0; i < count; i++)
+    {
+        float t = min + i * step;
+
+        Vector2 localPos = vertical
+            ? new Vector2(col.offset.x, col.offset.y + t)
+            : new Vector2(col.offset.x + t, col.offset.y);
+
+        Vector3 worldPos = transform.TransformPoint(localPos);
+
+        if (snapTilesToPixelGrid && wallTileSprite != null)
+        {
+            float ppu = wallTileSprite.pixelsPerUnit;
+            float stepPix = 1f / Mathf.Max(1f, ppu);
+            worldPos.x = Mathf.Round(worldPos.x / stepPix) * stepPix;
+            worldPos.y = Mathf.Round(worldPos.y / stepPix) * stepPix;
+        }
+
+        CreateTile(worldPos, rot);
+    }
 }
 
 
+void CreateTile(Vector3 worldPos, Quaternion rot)
+{
+    var tile = new GameObject("Tile");
+    tile.transform.SetParent(visualsRoot, true);
+    tile.transform.position = new Vector3(worldPos.x, worldPos.y, 0f);
+    tile.transform.rotation = rot;
+    tile.transform.localScale = Vector3.one;
 
-    // ------- POZIOME DRZWI (górna/dolna ściana) -------
+    var sr = tile.AddComponent<SpriteRenderer>();
+    sr.sprite = wallTileSprite;
+    sr.sortingOrder = sortingOrder;
+    sr.color = tileColor;
+}
 
-    void CreateHorizontalDoor(float doorHeightWorld)
+
+    // ======================================================
+    // COLLIDERS – DRZWI
+    // ======================================================
+
+    // LEWA/PRAWA – drzwi OD DOŁU
+    void CreateVerticalDoor_FromBottom(float doorHWorld)
     {
-        Vector3 lossy = transform.lossyScale;
-        float sx = Mathf.Max(Mathf.Abs(lossy.x), 0.0001f);
+        EnsureMainCol("CreateVerticalDoor_FromBottom");
 
-        float fullLocalWidth = mainCol.size.x;
-        float thickLocal     = mainCol.size.y;
+        float sy = Mathf.Max(Mathf.Abs(transform.lossyScale.y), 0.0001f);
+        float doorHLocal = doorHWorld / sy;
 
-        // szerokość drzwi w LOCAL (używamy tej samej „doorHeightWorld” jako szerokości otworu)
-        float doorLocal = doorHeightWorld / sx;
-        doorLocal = Mathf.Clamp(doorLocal, 0.1f, fullLocalWidth * 0.9f);
+        float fullLocal = mainCol.size.y;
+        float thickLocal = mainCol.size.x;
 
-        float restLocal = fullLocalWidth - doorLocal;
-        float segLocal  = restLocal * 0.5f;
-
-        Vector2 center = mainCol.offset;
+        doorHLocal = Mathf.Clamp(doorHLocal, 0.1f, fullLocal * 0.95f);
+        float topHeight = fullLocal - doorHLocal;
 
         mainCol.enabled = false;
 
-        // lewy segment
-        var left = gameObject.AddComponent<BoxCollider2D>();
-        left.size   = new Vector2(segLocal, thickLocal);
-        left.offset = new Vector2(
-            center.x - (doorLocal * 0.5f + segLocal * 0.5f),
-            center.y);
+        var top = gameObject.AddComponent<BoxCollider2D>();
+        top.size = new Vector2(thickLocal, topHeight);
 
-        // prawy segment
+        float bottomY = -fullLocal / 2f;
+        float topCenterY = bottomY + doorHLocal + topHeight / 2f;
+        top.offset = new Vector2(0f, topCenterY);
+    }
+
+    // GÓRA/DÓŁ – drzwi na środku
+    void CreateHorizontalDoor_Centered(float doorWWorld)
+    {
+        EnsureMainCol("CreateHorizontalDoor_Centered");
+
+        float sx = Mathf.Max(Mathf.Abs(transform.lossyScale.x), 0.0001f);
+        float doorWLocal = doorWWorld / sx;
+
+        float fullLocal = mainCol.size.x;
+        float thickLocal = mainCol.size.y;
+
+        doorWLocal = Mathf.Clamp(doorWLocal, 0.1f, fullLocal * 0.9f);
+
+        float rest = fullLocal - doorWLocal;
+        float seg = rest * 0.5f;
+
+        mainCol.enabled = false;
+
+        var left = gameObject.AddComponent<BoxCollider2D>();
+        left.size = new Vector2(seg, thickLocal);
+        left.offset = new Vector2(-(doorWLocal * 0.5f + seg * 0.5f), 0f);
+
         var right = gameObject.AddComponent<BoxCollider2D>();
-        right.size   = new Vector2(segLocal, thickLocal);
-        right.offset = new Vector2(
-            center.x + (doorLocal * 0.5f + segLocal * 0.5f),
-            center.y);
+        right.size = new Vector2(seg, thickLocal);
+        right.offset = new Vector2(doorWLocal * 0.5f + seg * 0.5f, 0f);
     }
 }

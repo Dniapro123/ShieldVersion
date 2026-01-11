@@ -5,13 +5,13 @@ public class RoomBuildingManager : MonoBehaviour
 {
     [Header("Prefaby / referencje")]
     public GameObject roomPrefab;
-    public GameObject mainRoom;        // Object above first room
+    public GameObject mainRoom;        // pokój startowy na scenie
     public PlayerMovement player;
 
     [Header("Ustawienia")]
-    public int maxRooms = 6;
-    public int roomW = 20;             // size +1
-    public int roomH = 12;             // Size + 0
+    public int maxRooms = 8;
+    public int roomW = 26;
+    public int roomH = 12;
 
     private Dictionary<Vector2Int, GameObject> rooms = new();
     private GameObject ghost;
@@ -23,41 +23,58 @@ public class RoomBuildingManager : MonoBehaviour
     {
         rooms[Vector2Int.zero] = mainRoom;
 
+        Debug.Log($"[RBM Start] mainRoom='{(mainRoom ? mainRoom.name : "NULL")}' at grid (0,0)");
+        Debug.Log($"[RBM Start] rooms.Count={rooms.Count}");
+
         if (player != null)
+        {
             player.enabled = false;
+            Debug.Log("[RBM Start] player disabled for build mode");
+        }
 
         CreateGhost();
     }
-        //Obsługa mysza  
-        //mouse
+
     void Update()
     {
         if (ghost == null) return;
 
         UpdateGhost();
 
-        if (Input.GetMouseButtonDown(0) && canPlace)
-            PlaceRoom();
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log($"[RBM Click] canPlace={canPlace} gridPos={gridPos}");
+            if (canPlace)
+                PlaceRoom();
+        }
 
         if (Input.GetKeyDown(KeyCode.Return))
+        {
+            Debug.Log("[RBM] EndBuild requested (Enter)");
             EndBuild();
+        }
     }
+
+    // =========================
+    // GHOST
+    // =========================
 
     void CreateGhost()
     {
         ghost = Instantiate(roomPrefab);
+        ghost.name = "GhostRoom";
 
-        // colliderów nie kasuje – tylko wyłącza
-        foreach (var c in ghost.GetComponentsInChildren<Collider2D>())
+        foreach (var c in ghost.GetComponentsInChildren<Collider2D>(true))
             c.enabled = false;
 
-        // GHOST nie może wykonywać logiki ścian
-        foreach (var w in ghost.GetComponentsInChildren<Wall>())
-            w.enabled = false; 
+        foreach (var w in ghost.GetComponentsInChildren<Wall>(true))
+            w.enabled = false;
 
-        ghostSprites = ghost.GetComponentsInChildren<SpriteRenderer>();
+        ghostSprites = ghost.GetComponentsInChildren<SpriteRenderer>(true);
         foreach (var s in ghostSprites)
             s.sortingOrder = 999;
+
+        Debug.Log($"[RBM Ghost] created ghost from prefab '{roomPrefab.name}', disabled colliders & Wall scripts");
     }
 
     void UpdateGhost()
@@ -88,30 +105,32 @@ public class RoomBuildingManager : MonoBehaviour
         foreach (var s in ghostSprites) s.color = c;
     }
 
+    // =========================
+    // PLACEMENT
+    // =========================
+
     void PlaceRoom()
     {
-        GameObject r = Instantiate(roomPrefab, ghost.transform.position, Quaternion.identity);
+        Debug.Log($"[RBM PlaceRoom] placing at gridPos={gridPos}, worldPos={ghost.transform.position}");
 
-        // upewniamy się, że w prawdziwym pokoju Wall.cs jest włączony
-        ResetWallScripts(r); //
+        GameObject r = Instantiate(roomPrefab, ghost.transform.position, Quaternion.identity);
+        r.name = $"Room_{gridPos.x}_{gridPos.y}";
 
         rooms[gridPos] = r;
+
+        Debug.Log($"[RBM PlaceRoom] instantiated '{r.name}'. rooms.Count={rooms.Count}");
+
         ConnectWithNeighbors(r, gridPos);
-        ConnectWithNeighbors(mainRoom, Vector2Int.zero);
-
     }
 
-    // Przywraca działanie skryptów Wall w nowym pokoju
-    private void ResetWallScripts(GameObject room)
-    {
-        foreach (var w in room.GetComponentsInChildren<Wall>(true))
-            w.enabled = true;
-    }
-
-    // --- ŁĄCZENIE POKOJÓW ---
+    // =========================
+    // CONNECTING
+    // =========================
 
     void ConnectWithNeighbors(GameObject room, Vector2Int pos)
     {
+        Debug.Log($"[RBM ConnectWithNeighbors] room='{room.name}' pos={pos}");
+
         Vector2Int[] dirs =
         {
             Vector2Int.right,
@@ -123,44 +142,88 @@ public class RoomBuildingManager : MonoBehaviour
         foreach (var dir in dirs)
         {
             Vector2Int nPos = pos + dir;
+
             if (rooms.TryGetValue(nPos, out GameObject neighbor))
             {
+                Debug.Log($"[RBM Neighbor FOUND] '{room.name}' has neighbor '{neighbor.name}' at {nPos} dir={dir}");
                 ConnectTwoRooms(room, neighbor, dir);
+            }
+            else
+            {
+                Debug.Log($"[RBM Neighbor NONE] '{room.name}' no neighbor at {nPos} dir={dir}");
             }
         }
     }
 
     void ConnectTwoRooms(GameObject a, GameObject b, Vector2Int dirFromAtoB)
     {
+        Debug.Log($"[RBM ConnectTwoRooms] A='{a.name}' B='{b.name}' dir={dirFromAtoB}");
+
         Transform wallsA = FindWalls(a.transform);
         Transform wallsB = FindWalls(b.transform);
 
+        Debug.Log($"[RBM FindWalls] A walls={(wallsA ? "OK" : "NULL")} | B walls={(wallsB ? "OK" : "NULL")}");
+
         if (wallsA == null || wallsB == null)
         {
-            Debug.LogWarning("Nie znaleziono 'Walls' w którymś pokoju");
+            Debug.LogWarning("[RBM] Nie znaleziono 'Walls' w którymś pokoju");
             return;
         }
 
-        if (dirFromAtoB == Vector2Int.right)
+        // wybierz nazwy ścian po obu stronach
+        string aWallName = null;
+        string bWallName = null;
+
+        if (dirFromAtoB == Vector2Int.right) { aWallName = "Wall_Right";  bWallName = "Wall_Left"; }
+        if (dirFromAtoB == Vector2Int.left)  { aWallName = "Wall_Left";   bWallName = "Wall_Right"; }
+        if (dirFromAtoB == Vector2Int.up)    { aWallName = "Wall_Top";    bWallName = "Wall_Bottom"; }
+        if (dirFromAtoB == Vector2Int.down)  { aWallName = "Wall_Bottom"; bWallName = "Wall_Top"; }
+
+        if (aWallName == null || bWallName == null)
         {
-            wallsA.Find("Wall_Right").GetComponent<Wall>().MakeInterior();
-            wallsB.Find("Wall_Left").GetComponent<Wall>().MakeInterior();
+            Debug.LogError("[RBM] Unknown direction mapping!");
+            return;
         }
-        else if (dirFromAtoB == Vector2Int.left)
+
+        Transform aWallT = wallsA.Find(aWallName);
+        Transform bWallT = wallsB.Find(bWallName);
+
+        Debug.Log($"[RBM Walls Find] A.{aWallName}={(aWallT ? "OK" : "NULL")} | B.{bWallName}={(bWallT ? "OK" : "NULL")}");
+
+        if (!aWallT || !bWallT)
         {
-            wallsA.Find("Wall_Left").GetComponent<Wall>().MakeInterior();
-            wallsB.Find("Wall_Right").GetComponent<Wall>().MakeInterior();
+            Debug.LogError($"[RBM] Missing wall transform! A.{aWallName} or B.{bWallName}");
+            return;
         }
-        else if (dirFromAtoB == Vector2Int.up)
+
+        Wall aWall = aWallT.GetComponent<Wall>();
+        Wall bWall = bWallT.GetComponent<Wall>();
+
+        Debug.Log($"[RBM Wall Script] A Wall={(aWall ? "OK" : "NULL")} | B Wall={(bWall ? "OK" : "NULL")}");
+
+        if (!aWall || !bWall)
         {
-            wallsA.Find("Wall_Top").GetComponent<Wall>().MakeInterior();
-            wallsB.Find("Wall_Bottom").GetComponent<Wall>().MakeInterior();
+            Debug.LogError("[RBM] Missing Wall component on one of the walls!");
+            return;
         }
-        else if (dirFromAtoB == Vector2Int.down)
-        {
-            wallsA.Find("Wall_Bottom").GetComponent<Wall>().MakeInterior();
-            wallsB.Find("Wall_Top").GetComponent<Wall>().MakeInterior();
-        }
+
+        // LOGI STANU + COLLIDERÓW PRZED
+        int aColsBefore = aWallT.GetComponents<BoxCollider2D>().Length;
+        int bColsBefore = bWallT.GetComponents<BoxCollider2D>().Length;
+
+        Debug.Log($"[RBM BEFORE] A={a.name}/{aWallName} state={aWall.state} cols={aColsBefore} | " +
+                  $"B={b.name}/{bWallName} state={bWall.state} cols={bColsBefore}");
+
+        // wywołanie drzwi
+        aWall.MakeInterior();
+        bWall.MakeInterior();
+
+        // LOGI STANU + COLLIDERÓW PO
+        int aColsAfter = aWallT.GetComponents<BoxCollider2D>().Length;
+        int bColsAfter = bWallT.GetComponents<BoxCollider2D>().Length;
+
+        Debug.Log($"[RBM AFTER]  A={a.name}/{aWallName} state={aWall.state} cols={aColsAfter} | " +
+                  $"B={b.name}/{bWallName} state={bWall.state} cols={bColsAfter}");
     }
 
     Transform FindWalls(Transform root)
@@ -173,11 +236,15 @@ public class RoomBuildingManager : MonoBehaviour
         return null;
     }
 
+    // =========================
+    // END BUILD
+    // =========================
+
     void EndBuild()
     {
         if (player != null) player.enabled = true;
         if (ghost != null) Destroy(ghost);
 
-        Debug.Log("Build done.");
+        Debug.Log("[RBM EndBuild] build done, player enabled, ghost destroyed");
     }
 }
