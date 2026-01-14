@@ -384,8 +384,8 @@ Transform:
   m_GameObject: {fileID: 544847335}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.0928, y: 1.7926, z: 0}
-  m_LocalScale: {x: 3.5555062, y: 4.9147153, z: 1}
+  m_LocalPosition: {x: -2.1645, y: 1.8882, z: 0}
+  m_LocalScale: {x: 3.262888, y: 4.5962415, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -830,8 +830,8 @@ MonoBehaviour:
   roomPrefab: {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
   mainRoom: {fileID: 1027396948}
   player: {fileID: 544847336}
-  maxRooms: 6
-  roomW: 21
+  maxRooms: 8
+  roomW: 27
   roomH: 13
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

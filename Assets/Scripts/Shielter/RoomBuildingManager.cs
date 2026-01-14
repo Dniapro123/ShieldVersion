@@ -10,7 +10,8 @@ public class RoomBuildingManager : MonoBehaviour
 
     [Header("Ustawienia")]
     public int maxRooms = 8;
-    public int roomW = 26;
+    public int roomW = 40
+    ;
     public int roomH = 12;
 
     private Dictionary<Vector2Int, GameObject> rooms = new();
