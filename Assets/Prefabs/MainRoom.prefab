@@ -359,7 +359,7 @@ GameObject:
   - component: {fileID: 1369898678626076616}
   - component: {fileID: 2590091778166167594}
   - component: {fileID: 5772136386018657338}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Reactor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -375,8 +375,8 @@ Transform:
   m_GameObject: {fileID: 2552718796605336189}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.03, y: -3.7493, z: 0}
+  m_LocalScale: {x: 2.1162848, y: 3.1977296, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 12366401872730283}
