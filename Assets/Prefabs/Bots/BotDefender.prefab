@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6715590486573422839}
   - component: {fileID: 7890439860528980056}
   - component: {fileID: 7178089384968201175}
+  - component: {fileID: 1157747745732989493}
   m_Layer: 0
   m_Name: BotDefender
   m_TagString: Untagged
@@ -176,3 +177,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   freezeInBuildPhases: 1
+--- !u!114 &1157747745732989493
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5465357889621468136}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  _assetId: 1919581573
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0

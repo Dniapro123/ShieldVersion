@@ -1,30 +1,29 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public class TrapPlacementManager : MonoBehaviour
 {
-    
     [Serializable]
     public class TrapDef
     {
-        public string id;                 // np. "Spikes"
-        public GameObject prefab;         // prefab pułapki
-        public int limit = 3;             // ile sztuk wolno
+        public string id;
+        public GameObject prefab;
+        public int limit = 3;
         [HideInInspector] public int used;
-
-        public TrapAttach attach = TrapAttach.Any; // gdzie może być montowana (fallback)
+        public TrapAttach attach = TrapAttach.Any;
     }
 
     public enum TrapAttach
     {
-        Any,            // może wszędzie (np. wisząca)
-        FloorOnly,      // tylko podłoga
-        CeilingOnly,    // tylko sufit
-        WallOnly,       // tylko ściany (lewa/prawa)
-        FloorCeiling,   // podłoga lub sufit
-        FloorWall,      // podłoga lub ściany
-        CeilingWall     // sufit lub ściany
+        Any,
+        FloorOnly,
+        CeilingOnly,
+        WallOnly,
+        FloorCeiling,
+        FloorWall,
+        CeilingWall
     }
 
     public event Action OnTrapPlacementFinished;
@@ -33,12 +32,10 @@ public class TrapPlacementManager : MonoBehaviour
     public List<TrapDef> traps = new();
 
     [Header("Placement")]
-    [Tooltip("USTAW: tylko warstwy ścian/podłogi/sufitu (np. Wall + Ground). Nie dawaj Everything.")]
+    [Tooltip("USTAW: tylko warstwy ścian/podłogi/sufitu (np. Wall + Ground).")]
     public LayerMask surfaceMask;
 
-    [Tooltip("Jak daleko od kursora szukamy najbliższej powierzchni (w praktyce 2-5 jest OK).")]
     public float maxSnapDistance = 4f;
-
     public KeyCode finishKey = KeyCode.Return;
 
     [Header("Ghost")]
@@ -59,10 +56,7 @@ public class TrapPlacementManager : MonoBehaviour
 
     static readonly Vector2[] RayDirs =
     {
-        Vector2.up,
-        Vector2.down,
-        Vector2.left,
-        Vector2.right
+        Vector2.up, Vector2.down, Vector2.left, Vector2.right
     };
 
     void Awake()
@@ -72,6 +66,9 @@ public class TrapPlacementManager : MonoBehaviour
 
     void OnEnable()
     {
+        // KLUCZ: w edytorze (bez Play) NIC nie tworzymy
+        if (!Application.isPlaying) return;
+
         if (traps == null || traps.Count == 0)
         {
             Debug.LogWarning("[TrapPlacement] No traps configured!");
@@ -85,40 +82,29 @@ public class TrapPlacementManager : MonoBehaviour
 
     void OnDisable()
     {
+        if (!Application.isPlaying) return;
         DestroyGhost();
     }
 
     void Update()
     {
+        if (!Application.isPlaying) return;
         if (traps == null || traps.Count == 0) return;
 
-        // Enter kończy fazę
         if (Input.GetKeyDown(finishKey))
         {
-            Finish();
+            Debug.Log("[TrapPlacement] FINISHED via Enter");
+            OnTrapPlacementFinished?.Invoke();
             return;
         }
 
-        // PPM - zmiana rodzaju pułapki (pętla)
         if (Input.GetMouseButtonDown(1))
-        {
             NextTrap();
-        }
 
         UpdateGhost();
 
-        // LPM - postaw pułapkę
-        if (Input.GetMouseButtonDown(0))
-        {
-            if (canPlace)
-                PlaceTrap();
-        }
-    }
-
-    void Finish()
-    {
-        Debug.Log("[TrapPlacement] FINISHED via Enter");
-        OnTrapPlacementFinished?.Invoke();
+        if (Input.GetMouseButtonDown(0) && canPlace)
+            PlaceTrap();
     }
 
     void NextTrap()
@@ -147,6 +133,13 @@ public class TrapPlacementManager : MonoBehaviour
 
         ghost = Instantiate(def.prefab);
         ghost.name = $"GhostTrap_{def.id}";
+
+        // ✅ super ważne: ghost nie ma prawa zapisać się do sceny
+        ghost.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+
+        // ✅ i jeszcze: usuń NetworkIdentity z ghosta (żeby Mirror go nie traktował jak network/scene object)
+        foreach (var ni in ghost.GetComponentsInChildren<NetworkIdentity>(true))
+            Destroy(ni);
 
         // wyłącz collidery w ghost
         foreach (var c in ghost.GetComponentsInChildren<Collider2D>(true))
@@ -187,7 +180,6 @@ public class TrapPlacementManager : MonoBehaviour
         Vector3 mouse = GetMouseWorld();
         mouse.z = 0;
 
-        // Jeśli prefab mówi "Free" -> można w powietrzu (tylko limit)
         if (ghostPlaceable != null && ghostPlaceable.mode == TrapPlacementMode.Free)
         {
             placePos = mouse;
@@ -199,7 +191,6 @@ public class TrapPlacementManager : MonoBehaviour
             return;
         }
 
-        // Surface: znajdź najbliższą powierzchnię w promieniu maxSnapDistance
         if (!TryPickSurface(mouse, out Vector2 hitPoint, out Vector2 hitNormal))
         {
             canPlace = false;
@@ -208,10 +199,8 @@ public class TrapPlacementManager : MonoBehaviour
             return;
         }
 
-        // reguły attach (z TrapDef) - fallback
         bool attachOk = AttachRuleOk(Current().attach, hitNormal);
 
-        // reguły z TrapPlaceable (jeśli istnieje)
         bool placeableOk = true;
         float offset = 0f;
 
@@ -227,17 +216,15 @@ public class TrapPlacementManager : MonoBehaviour
 
         placePos = hitPoint + hitNormal.normalized * offset;
 
-        // rotacja: dopasuj oś "facingAxis" prefab-a do normalnej
         if (ghostPlaceable != null)
         {
-            Vector2 from = ghostPlaceable.FacingAxisVector();   // np. Right
-            Vector2 to   = hitNormal.normalized;               // normal w stronę "wnętrza" (zwykle)
+            Vector2 from = ghostPlaceable.FacingAxisVector();
+            Vector2 to = hitNormal.normalized;
             float ang = Vector2.SignedAngle(from, to);
             placeRot = Quaternion.Euler(0, 0, ang);
         }
         else
         {
-            // prosta rotacja jak wcześniej
             placeRot = RotationFromNormal(hitNormal);
         }
 
@@ -272,7 +259,6 @@ public class TrapPlacementManager : MonoBehaviour
         RaycastHit2D best = default;
         float bestDist = float.PositiveInfinity;
 
-        // 4 raycasty z kursora: wybieramy najbliższe trafienie
         foreach (var d in RayDirs)
         {
             var h = Physics2D.Raycast(origin, d, maxSnapDistance, surfaceMask);
@@ -295,15 +281,13 @@ public class TrapPlacementManager : MonoBehaviour
 
     TrapSurfaceMask SurfaceMaskFromNormal(Vector2 n)
     {
-        // dominująca oś
         if (n.y > 0.5f) return TrapSurfaceMask.Floor;
         if (n.y < -0.5f) return TrapSurfaceMask.Ceiling;
-        if (n.x > 0.5f) return TrapSurfaceMask.LeftWall;   // normal (1,0)
-        if (n.x < -0.5f) return TrapSurfaceMask.RightWall; // normal (-1,0)
+        if (n.x > 0.5f) return TrapSurfaceMask.LeftWall;
+        if (n.x < -0.5f) return TrapSurfaceMask.RightWall;
         return TrapSurfaceMask.None;
     }
 
-    // Normal -> rotacja (fallback)
     Quaternion RotationFromNormal(Vector2 n)
     {
         float angle = Mathf.Atan2(n.y, n.x) * Mathf.Rad2Deg;

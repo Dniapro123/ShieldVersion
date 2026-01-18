@@ -1,52 +1,40 @@
-using System;
 using UnityEngine;
+using Mirror;
 
 public class GameManagerPhases : MonoBehaviour
 {
-    public enum Phase
-    {
-        BuildRooms,
-        PlaceTraps,
-        Play
-    }
+    public enum Phase { BuildRooms, PlaceTraps, Play }
 
-    [Header("References")]
+    [Header("References (scene managers)")]
     public RoomBuildingManager roomBuilder;
     public TrapPlacementManager trapPlacer;
+
+    [Header("Player (auto: local player)")]
     public PlayerMovement player;
+    public Rigidbody2D playerRb;
 
     [Header("Ground snap (optional)")]
     public LayerMask groundMask;
     public float snapDownDistance = 80f;
     public float groundClearance = 0.05f;
 
-    [Header("Optional: freeze player physics while not playing")]
-    public Rigidbody2D playerRb;
-
     [Header("Debug")]
     public Phase phase = Phase.BuildRooms;
 
-    // zapamiętanie stanu RB żeby po Play wrócił normalnie
-    private bool rbStored = false;
-    private RigidbodyType2D prevBodyType;
-    private float prevGravity;
-    private RigidbodyConstraints2D prevConstraints;
-
     void Awake()
     {
-        if (!player) player = FindAnyObjectByType<PlayerMovement>();
-        if (player && !playerRb) playerRb = player.GetComponent<Rigidbody2D>();
         if (!roomBuilder) roomBuilder = FindAnyObjectByType<RoomBuildingManager>();
-        if (!trapPlacer) trapPlacer = FindAnyObjectByType<TrapPlacementManager>();
+        if (!trapPlacer)  trapPlacer  = FindAnyObjectByType<TrapPlacementManager>();
     }
 
     void Start()
     {
+        // fazy są wspólne, ale kontrola dotyczy TYLKO local playera
         if (roomBuilder) roomBuilder.OnBuildFinished += HandleBuildFinished;
         if (trapPlacer)  trapPlacer.OnTrapPlacementFinished += HandleTrapFinished;
 
-        // start zawsze w budowie
-        SetPhase(Phase.BuildRooms);
+        // NIE ustawiaj fazy od razu, poczekaj aż local player się pojawi
+        InvokeRepeating(nameof(TryBindLocalPlayer), 0f, 0.2f);
     }
 
     void OnDestroy()
@@ -55,15 +43,29 @@ public class GameManagerPhases : MonoBehaviour
         if (trapPlacer)  trapPlacer.OnTrapPlacementFinished -= HandleTrapFinished;
     }
 
+    void TryBindLocalPlayer()
+    {
+        if (!NetworkClient.active) return;
+        if (NetworkClient.localPlayer == null) return;
+
+        player = NetworkClient.localPlayer.GetComponent<PlayerMovement>();
+        playerRb = NetworkClient.localPlayer.GetComponent<Rigidbody2D>();
+
+        if (player != null && playerRb != null)
+        {
+            CancelInvoke(nameof(TryBindLocalPlayer));
+            Debug.Log("[GM] Bound local player OK");
+            SetPhase(Phase.BuildRooms);
+        }
+    }
+
     void HandleBuildFinished()
     {
-        Debug.Log("[GM] Build finished -> PlaceTraps");
         SetPhase(Phase.PlaceTraps);
     }
 
     void HandleTrapFinished()
     {
-        Debug.Log("[GM] Traps finished -> Play");
         SetPhase(Phase.Play);
     }
 
@@ -71,60 +73,43 @@ public class GameManagerPhases : MonoBehaviour
     {
         phase = newPhase;
 
-        // aktywacje managerów faz
+        // managerów faz nie ograniczamy per-player (to scena),
+        // ale jeśli chcesz: docelowo tylko Builder ma je mieć aktywne
         if (roomBuilder) roomBuilder.enabled = (phase == Phase.BuildRooms);
         if (trapPlacer)  trapPlacer.enabled  = (phase == Phase.PlaceTraps);
 
-        bool allowPlayerControl = (phase == Phase.Play);
+        bool play = (phase == Phase.Play);
 
-        // gracz – sterowanie tylko w Play
-        if (player) player.enabled = allowPlayerControl;
+        // sterowanie tylko w Play
+        if (player) player.enabled = play;
 
-        // fizyka gracza – w Build/Traps zamroź, w Play przywróć
+        // HARD RESET fizyki na local playerze
         if (playerRb)
         {
-            if (!allowPlayerControl)
+            if (!play)
             {
-                StoreRbStateIfNeeded();
-
                 playerRb.linearVelocity = Vector2.zero;
                 playerRb.angularVelocity = 0f;
-                playerRb.gravityScale = 0f;
+                playerRb.simulated = true; // local ma być true
                 playerRb.bodyType = RigidbodyType2D.Kinematic;
+                playerRb.gravityScale = 0f;
                 playerRb.constraints = RigidbodyConstraints2D.FreezeAll;
             }
             else
             {
-                RestoreRbState();
-
                 playerRb.linearVelocity = Vector2.zero;
                 playerRb.angularVelocity = 0f;
+                playerRb.simulated = true;
+                playerRb.bodyType = RigidbodyType2D.Dynamic;
+                playerRb.gravityScale = 1f;
+                playerRb.constraints = RigidbodyConstraints2D.FreezeRotation;
                 playerRb.WakeUp();
 
                 SnapPlayerToGroundIfPossible();
             }
         }
 
-        Debug.Log($"[GameManagerPhases] Phase = {phase}");
-    }
-
-    void StoreRbStateIfNeeded()
-    {
-        if (rbStored) return;
-        rbStored = true;
-
-        prevBodyType = playerRb.bodyType;
-        prevGravity = playerRb.gravityScale;
-        prevConstraints = playerRb.constraints;
-    }
-
-    void RestoreRbState()
-    {
-        if (!rbStored) return;
-
-        playerRb.bodyType = prevBodyType;
-        playerRb.gravityScale = prevGravity;
-        playerRb.constraints = prevConstraints;
+        Debug.Log($"[GameManagerPhases] Phase = {phase} (local player only)");
     }
 
     void SnapPlayerToGroundIfPossible()
