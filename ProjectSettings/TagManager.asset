@@ -6,6 +6,7 @@ TagManager:
   tags:
   - MainRoom
   - Room
+  - Enemy
   layers:
   - Default
   - TransparentFX
@@ -15,10 +16,10 @@ TagManager:
   - UI
   - 
   - 
-  - 
+  - PlaceArea
   - Ground
   - Wall
-  - 
+  - FrontCover
   - 
   - 
   - 
@@ -42,6 +43,15 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Background
+    uniqueID: 2495203381
+    locked: 0
+  - name: Back
+    uniqueID: 2676895605
+    locked: 0
+  - name: Front
+    uniqueID: 2250925841
     locked: 0
   m_RenderingLayers:
   - Default

@@ -9,12 +9,11 @@ public class PlayerRoleNet : NetworkBehaviour
     [SyncVar(hook = nameof(OnRoleSync))]
     public PlayerRole role = PlayerRole.Builder;
 
-    public event Action<PlayerRole> OnRoleChanged;
+    public event Action<PlayerRole, PlayerRole> RoleChanged;
 
     void OnRoleSync(PlayerRole oldRole, PlayerRole newRole)
     {
-        role = newRole;
-        OnRoleChanged?.Invoke(newRole);
+        RoleChanged?.Invoke(oldRole, newRole);
     }
 
     public bool IsBuilder => role == PlayerRole.Builder;

@@ -6,8 +6,12 @@ public class RoomNet : NetworkBehaviour
     [SyncVar] public int gridX;
     [SyncVar] public int gridY;
 
+    // bity wg (int)WallType
     [SyncVar(hook = nameof(OnMaskChanged))]
-    public int openMask; // bity wg (int)WallType
+    public int openMask;
+
+    // Stabilny hash pokoju na podstawie gridów (bez nowych SyncVar)
+    public int RoomHash => unchecked((gridX * 73856093) ^ (gridY * 19349663));
 
     [Server]
     public void InitGrid(int gx, int gy)
@@ -40,8 +44,6 @@ public class RoomNet : NetworkBehaviour
         {
             if (w == null) continue;
 
-            // UWAGA: Wall musi mieć pole wallType typu WallType
-            // i ustawione w prefabie (Left/Right/Top/Bottom)
             int bit = 1 << (int)w.wallType;
 
             if ((mask & bit) != 0)

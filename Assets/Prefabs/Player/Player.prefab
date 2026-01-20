@@ -16,8 +16,13 @@ GameObject:
   - component: {fileID: -6154611892210705095}
   - component: {fileID: 2699250798201964957}
   - component: {fileID: 1809300054197355895}
-  - component: {fileID: 607231218503393548}
   - component: {fileID: -3627152729919422391}
+  - component: {fileID: 8190411662333204724}
+  - component: {fileID: 1114025763498673997}
+  - component: {fileID: 9074121635353155908}
+  - component: {fileID: 3461585532982604225}
+  - component: {fileID: -8673240968914153924}
+  - component: {fileID: -4328485545263290100}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -255,22 +260,6 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   disableForRemote: []
---- !u!114 &607231218503393548
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1231400657462806853}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb8f775c8d4ad9f448dee079dccef0e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  role: 0
 --- !u!114 &-3627152729919422391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,8 +278,107 @@ MonoBehaviour:
   roomPrefabs:
   - {fileID: 2349251759251770945, guid: e300b3ba09a0b214d87faaea474fa582, type: 3}
   - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
-  maxRooms: 8
-  roomW: 26
-  roomH: 12
-  minGridY: 0
-  originWorld: {x: 0, y: 0, z: 0}
+--- !u!114 &8190411662333204724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ce86f6c8207e95429f0bd577400e137, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  roomPrefabs:
+  - {fileID: 2349251759251770945, guid: e300b3ba09a0b214d87faaea474fa582, type: 3}
+  - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
+  phases: {fileID: 0}
+  cycleKey: 324
+  placeKey: 323
+  ghostSortingOrder: 999
+  ghostOk: {r: 0, g: 1, b: 0, a: 0.35}
+  ghostBad: {r: 1, g: 0, b: 0, a: 0.35}
+--- !u!114 &1114025763498673997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb8f775c8d4ad9f448dee079dccef0e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  role: 0
+--- !u!114 &9074121635353155908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60e32677bb7e3a347bfe93530c3509b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &3461585532982604225
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06572d378ea58f14e9222c823162a5c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  nextTrapKey: 324
+  prevTrapKey: 113
+  placeKey: 323
+--- !u!114 &-8673240968914153924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9819ccde5df8294eaa60b9303292b9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  nextPhaseKey: 13
+--- !u!114 &-4328485545263290100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2f95384e3564c04db37e594a09866b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
