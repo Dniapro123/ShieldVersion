@@ -7,8 +7,11 @@ public class RoomBuildClient : NetworkBehaviour
     [Header("Same list/order as BuildCommands")]
     public List<GameObject> roomPrefabs = new();
 
+    [Header("MainRoom rules (client preview)")]
+    public int mainRoomPrefabIndex = 0;
+
     [Header("Optional: phase gating (recommended)")]
-    public GameManagerPhases phases; // znajdzie się automatycznie
+    public GameManagerPhases phases;
 
     [Header("Input")]
     public KeyCode cycleKey = KeyCode.Mouse1;   // PPM
@@ -40,34 +43,23 @@ public class RoomBuildClient : NetworkBehaviour
 
     public override void OnStartLocalPlayer()
     {
-        // lokalny gracz kontroluje ghost
         lastCanBuild = false;
         RefreshGhostState(force: true);
 
-        // jeżeli masz RoleChanged (hook), to się podepniemy
         if (roleNet != null)
             roleNet.RoleChanged += OnRoleChanged;
     }
 
     public override void OnStopLocalPlayer()
     {
-        // gdy rozłączasz / stop host / niszczy się player -> sprzątaj
         if (roleNet != null)
             roleNet.RoleChanged -= OnRoleChanged;
 
         DestroyGhost();
     }
 
-    void OnDisable()
-    {
-        // jak wyłączysz komponent (np. faza Play) też sprzątaj
-        DestroyGhost();
-    }
-
-    void OnDestroy()
-    {
-        DestroyGhost();
-    }
+    void OnDisable() => DestroyGhost();
+    void OnDestroy() => DestroyGhost();
 
     void OnRoleChanged(PlayerRole oldRole, PlayerRole newRole)
     {
@@ -95,11 +87,13 @@ public class RoomBuildClient : NetworkBehaviour
 
         if (Input.GetKeyDown(placeKey))
         {
-            if (TryGetGridFromMouse(out int gx, out int gy))
-            {
-                // wysyłamy do serwera
-                build.CmdPlaceRoom(index, gx, gy);
-            }
+            if (!TryGetGridFromMouse(out int gx, out int gy))
+                return;
+
+            if (!IsPlacementAllowed(gx, gy, index))
+                return;
+
+            build.CmdPlaceRoom(index, gx, gy);
         }
     }
 
@@ -110,21 +104,14 @@ public class RoomBuildClient : NetworkBehaviour
         if (!force && canBuildNow == lastCanBuild) return;
         lastCanBuild = canBuildNow;
 
-        if (!canBuildNow)
-        {
-            DestroyGhost();
-        }
-        else
-        {
-            CreateGhost();
-        }
+        if (!canBuildNow) DestroyGhost();
+        else CreateGhost();
     }
 
     bool CanBuildNow()
     {
         if (roleNet == null || !roleNet.IsBuilder) return false;
 
-        // mega ważne: nie pokazuj ghosta w Play / Traps
         if (phases != null && phases.phase != GameManagerPhases.Phase.BuildRooms)
             return false;
 
@@ -141,22 +128,16 @@ public class RoomBuildClient : NetworkBehaviour
 
         ghost = Instantiate(prefab);
         ghost.name = "GhostRoom";
-
-        // NAJWAŻNIEJSZE: zrób go dzieckiem local playera -> zniknie gdy player znika
         ghost.transform.SetParent(transform, true);
 
-        // NAJWAŻNIEJSZE #2: usuń natychmiast Mirror komponenty, żeby Mirror nie krzyczał w OnValidate
         foreach (var ni in ghost.GetComponentsInChildren<NetworkIdentity>(true))
             DestroyImmediate(ni);
-
         foreach (var nb in ghost.GetComponentsInChildren<NetworkBehaviour>(true))
             DestroyImmediate(nb);
 
-        // off colliders
         foreach (var c in ghost.GetComponentsInChildren<Collider2D>(true))
             c.enabled = false;
 
-        // off wszystkie skrypty (poza SR)
         foreach (var mb in ghost.GetComponentsInChildren<MonoBehaviour>(true))
             mb.enabled = false;
 
@@ -186,7 +167,8 @@ public class RoomBuildClient : NetworkBehaviour
         Vector3 pos = cfg.originWorld + new Vector3(gx * cfg.roomW, gy * cfg.roomH, 0f);
         ghost.transform.position = pos;
 
-        ApplyGhostColor(true);
+        bool ok = IsPlacementAllowed(gx, gy, index);
+        ApplyGhostColor(ok);
     }
 
     void ApplyGhostColor(bool ok)
@@ -194,6 +176,67 @@ public class RoomBuildClient : NetworkBehaviour
         if (ghostSrs == null) return;
         var col = ok ? ghostOk : ghostBad;
         foreach (var sr in ghostSrs) sr.color = col;
+    }
+
+    bool IsPlacementAllowed(int gx, int gy, int prefabIndex)
+    {
+        var cfg = BuildConfig.Instance;
+        if (!cfg) return false;
+
+        if (prefabIndex < 0 || prefabIndex >= roomPrefabs.Count) return false;
+        if (gy < cfg.minGridY) return false;
+
+        // local occupancy check (żeby nie stawiać na zajętym polu)
+        var allRooms = FindObjectsByType<RoomNet>(FindObjectsSortMode.None);
+        if (IsOccupied(allRooms, gx, gy)) return false;
+
+        // UWAGA: dla reguł "ostatni slot" używamy serwerowych SyncVar (stabilne)
+        int placedServer = (build != null) ? build.placedRoomsServer : 0;
+        bool mainPlacedServer = (build != null) && build.mainRoomPlaced;
+
+        // fallback, jeśli SyncVar jeszcze nie doszło (np. w edytorze): policz lokalnie
+        int placedLocal = allRooms != null ? allRooms.Length : 0;
+        int placed = placedServer > 0 ? placedServer : placedLocal;
+
+        if (placed >= cfg.maxRooms) return false;
+
+        bool hasNeighbor =
+            IsOccupied(allRooms, gx - 1, gy) ||
+            IsOccupied(allRooms, gx + 1, gy) ||
+            IsOccupied(allRooms, gx, gy - 1) ||
+            IsOccupied(allRooms, gx, gy + 1);
+
+        bool placementRule = (placed == 0) || (gy == 0) || hasNeighbor;
+        if (!placementRule) return false;
+
+        // ===== MainRoom rules (zgodnie z wymaganiem) =====
+        bool isMain = prefabIndex == mainRoomPrefabIndex;
+
+        if (isMain)
+        {
+            // MainRoom w dowolnym momencie, ale tylko raz
+            if (mainPlacedServer) return false;
+        }
+        else
+        {
+            // jeśli to ostatni slot i MainRoom jeszcze nie ma -> blokuj zwykłe pokoje
+            if (!mainPlacedServer && placed == cfg.maxRooms - 1) return false;
+        }
+        // ================================================
+
+        return true;
+    }
+
+    bool IsOccupied(RoomNet[] rooms, int gx, int gy)
+    {
+        if (rooms == null) return false;
+        for (int i = 0; i < rooms.Length; i++)
+        {
+            var r = rooms[i];
+            if (!r) continue;
+            if (r.gridX == gx && r.gridY == gy) return true;
+        }
+        return false;
     }
 
     bool TryGetGridFromMouse(out int gx, out int gy)

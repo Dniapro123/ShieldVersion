@@ -63,6 +63,7 @@
     <Compile Include="Assets\Scripts\Traps\TrapManagers\TrapPlaceClient.cs" />
     <Compile Include="Assets\Scripts\Traps\TrapManagers\TrapConfig.cs" />
     <Compile Include="Assets\Scripts\Traps\Enemy_Sideways.cs" />
+    <Compile Include="Assets\Scripts\Player\AttackerPickSpawnRoom.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_ExampleScript_01.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMPro_InstructionOverlay.cs" />
     <Compile Include="Assets\Scripts\Core\LoadingManager.cs" />
@@ -112,6 +113,7 @@
     <Compile Include="Assets\Scripts\Menu\NetDisconnectButton.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ObjectSpin.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_PhoneNumberValidator.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerSpawnState.cs" />
     <Compile Include="Assets\Scripts\Health\Health.cs" />
     <Compile Include="Assets\Scripts\Traps\EnemyProjectile.cs" />
     <Compile Include="Assets\Scripts\Traps\Firetrap.cs" />

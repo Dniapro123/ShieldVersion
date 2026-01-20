@@ -7,14 +7,34 @@ public class BuildCommands : NetworkBehaviour
     [Header("Spawnable Room Prefabs (MUST be registered in NetworkManager)")]
     public List<GameObject> roomPrefabs = new();
 
+    [Header("MainRoom rules")]
+    [Tooltip("Index w roomPrefabs który jest MainRoom.")]
+    public int mainRoomPrefabIndex = 0;
+
+    [Tooltip("Nazwa do auto-detekcji (opcjonalnie).")]
+    public string mainRoomNameHint = "MainRoom";
+
+    [SyncVar] public Vector3 builderMainSpawnWorld;
+
+    // >>> KLUCZ: serwerowa prawda o mainroom
+    [SyncVar] public bool mainRoomPlaced;
+
+    // >>> KLUCZ: serwerowa liczba postawionych pokoi (żeby klient nie mylił się przez opóźnienia)
+    [SyncVar] public int placedRoomsServer;
+
     private readonly Dictionary<Vector2Int, NetworkIdentity> rooms = new();
 
     int roomW, roomH, maxRooms, minGridY;
     Vector3 originWorld;
 
+    bool IsMainIndex(int i) => (mainRoomPrefabIndex >= 0 && i == mainRoomPrefabIndex);
+
     public override void OnStartServer()
     {
         rooms.Clear();
+        mainRoomPlaced = false;
+        placedRoomsServer = 0;
+        builderMainSpawnWorld = transform.position;
 
         var cfg = BuildConfig.Instance;
         if (cfg == null)
@@ -22,17 +42,18 @@ public class BuildCommands : NetworkBehaviour
             Debug.LogError("[SERVER] No BuildConfig in scene!");
             roomW = 26; roomH = 12; maxRooms = 8; minGridY = 0;
             originWorld = Vector3.zero;
-            return;
         }
+        else
+        {
+            roomW = cfg.roomW;
+            roomH = cfg.roomH;
+            maxRooms = cfg.maxRooms;
+            minGridY = cfg.minGridY;
+            originWorld = cfg.originWorld;
+            originWorld.z = 0f;
 
-        roomW = cfg.roomW;
-        roomH = cfg.roomH;
-        maxRooms = cfg.maxRooms;
-        minGridY = cfg.minGridY;
-        originWorld = cfg.originWorld;
-        originWorld.z = 0f;
-
-        Debug.Log($"[SERVER] BuildConfig: W={roomW} H={roomH} max={maxRooms} minY={minGridY} origin={originWorld}");
+            Debug.Log($"[SERVER] BuildConfig: W={roomW} H={roomH} max={maxRooms} minY={minGridY} origin={originWorld}");
+        }
     }
 
     [Command]
@@ -49,6 +70,21 @@ public class BuildCommands : NetworkBehaviour
 
         if (rooms.ContainsKey(gridPos)) return;
         if (rooms.Count >= maxRooms) return;
+
+        // ======= MAINROOM RULES (zgodnie z Twoim wymaganiem) =======
+        int placed = rooms.Count; // ile już stoi na serwerze
+
+        if (IsMainIndex(prefabIndex))
+        {
+            // MainRoom wolno w dowolnym momencie, ale tylko raz
+            if (mainRoomPlaced) return;
+        }
+        else
+        {
+            // jeśli to byłby ostatni slot i MainRoom jeszcze nie ma -> blokuj zwykłe pokoje
+            if (!mainRoomPlaced && placed == maxRooms - 1) return;
+        }
+        // ===========================================================
 
         bool neighbor =
             rooms.ContainsKey(gridPos + Vector2Int.left) ||
@@ -77,9 +113,26 @@ public class BuildCommands : NetworkBehaviour
         var ni = go.GetComponent<NetworkIdentity>();
         if (ni != null) rooms[gridPos] = ni;
 
+        placedRoomsServer = rooms.Count; // sync dla klienta
+
         Debug.Log($"[SERVER] Spawned {go.name} netId={ni.netId} at {gridPos}");
 
         ConnectWithNeighbors(go, gridPos);
+
+        // Jeśli to MainRoom: oznacz + teleport buildera na Spawn_Builder
+        if (IsMainIndex(prefabIndex))
+        {
+            mainRoomPlaced = true;
+
+            Transform spawnT = go.transform.Find("Spawn_Builder");
+            Vector3 spawnPos = spawnT ? spawnT.position : go.transform.position;
+
+            builderMainSpawnWorld = spawnPos;
+
+            transform.position = spawnPos;
+            var rb = GetComponent<Rigidbody2D>();
+            if (rb) rb.linearVelocity = Vector2.zero;
+        }
     }
 
     void ConnectWithNeighbors(GameObject room, Vector2Int pos)

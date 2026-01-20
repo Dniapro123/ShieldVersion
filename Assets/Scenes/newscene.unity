@@ -370,7 +370,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomW: 26
   roomH: 12
-  maxRooms: 8
+  maxRooms: 15
   minGridY: 0
   originWorld: {x: 0, y: 0, z: 0}
 --- !u!4 &519449594
@@ -693,7 +693,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: 'Disconect
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1907,7 +1909,8 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4709194875393071989, guid: ff6140b2522687040aa472fcb7447de9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

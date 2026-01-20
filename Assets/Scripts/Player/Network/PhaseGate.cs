@@ -30,7 +30,8 @@ public class PhaseGate : NetworkBehaviour
         bool allowTrapPlace = isBuilder && gm.phase == GamePhase.PlaceTraps;
 
         // ruch w Play (możesz zrobić tylko attacker, jeśli chcesz)
-        bool allowMove = gm.phase == GamePhase.Play;
+        bool allowMove = gm.phase == GamePhase.Play && (role.IsBuilder || gm.baseRevealed);
+
 
         if (roomBuild) roomBuild.enabled = allowRoomBuild;
         if (trapPlace) trapPlace.enabled = allowTrapPlace;

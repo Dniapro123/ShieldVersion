@@ -23,6 +23,8 @@ GameObject:
   - component: {fileID: 3461585532982604225}
   - component: {fileID: -8673240968914153924}
   - component: {fileID: -4328485545263290100}
+  - component: {fileID: 5235133368138338572}
+  - component: {fileID: 8087762428542937408}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -278,6 +280,9 @@ MonoBehaviour:
   roomPrefabs:
   - {fileID: 2349251759251770945, guid: e300b3ba09a0b214d87faaea474fa582, type: 3}
   - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
+  mainRoomPrefabIndex: 0
+  mainRoomNameHint: MainRoom
+  builderMainSpawnWorld: {x: 0, y: 0, z: 0}
 --- !u!114 &8190411662333204724
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -296,6 +301,8 @@ MonoBehaviour:
   roomPrefabs:
   - {fileID: 2349251759251770945, guid: e300b3ba09a0b214d87faaea474fa582, type: 3}
   - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
+  mainRoomPrefabIndex: 0
+  mainRoomNameHint: MainRoom
   phases: {fileID: 0}
   cycleKey: 324
   placeKey: 323
@@ -348,9 +355,12 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  nextTrapKey: 324
-  prevTrapKey: 113
+  cycleKey: 324
   placeKey: 323
+  rotateKey: 114
+  ghostSortingOrder: 999
+  ghostOk: {r: 0, g: 1, b: 0, a: 0.35}
+  ghostBad: {r: 1, g: 0, b: 0, a: 0.35}
 --- !u!114 &-8673240968914153924
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -377,6 +387,39 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f2f95384e3564c04db37e594a09866b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &5235133368138338572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fb7460e80915c34e88176740b86c4e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  placeAreaMask:
+    serializedVersion: 2
+    m_Bits: 256
+--- !u!114 &8087762428542937408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9a0e83b8b8e268498fc137dff6cca06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   syncDirection: 0
