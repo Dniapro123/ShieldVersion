@@ -493,7 +493,7 @@ Transform:
   m_GameObject: {fileID: 734244128}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -14.71, y: 2.16, z: -0.10254917}
+  m_LocalPosition: {x: -1.88, y: 2.65, z: -0.10254917}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -696,9 +696,9 @@ MonoBehaviour:
     fixedAngleDeg: 0
     positionSnapStep: 0
   - prefab: {fileID: 5465357889621468136, guid: cf11a54157d7ddd47adbf50269545a62, type: 3}
-    limitGlobal: 4
-    maxPerRoom: 4
-    attach: 1
+    limitGlobal: 3
+    maxPerRoom: 1
+    attach: 0
     angleOffsetDeg: 0
     allowRotate: 1
     allowedRotSteps90: 00000000010000000200000003000000
@@ -1020,7 +1020,7 @@ Transform:
   m_GameObject: {fileID: 1654754522}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.8026778, y: 1.9624271, z: -0.0092981355}
+  m_LocalPosition: {x: -25.9, y: 3.3, z: -0.0092981355}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

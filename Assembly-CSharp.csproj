@@ -83,6 +83,7 @@
     <Compile Include="Assets\Scripts\Traps\EnemyProjectile.cs" />
     <Compile Include="Assets\Scripts\Traps\Firetrap.cs" />
     <Compile Include="Assets\Scripts\Core\CameraController.cs" />
+    <Compile Include="Assets\Scripts\Shielter\Rooms\RoomVisibilityCover.cs" />
     <Compile Include="Assets\Scripts\UI\UIManager.cs" />
     <Compile Include="Assets\Scripts\UI\VolumeText.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerRoleNet.cs" />
