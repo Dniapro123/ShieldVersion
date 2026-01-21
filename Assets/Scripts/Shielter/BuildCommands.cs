@@ -128,6 +128,10 @@ public class BuildCommands : NetworkBehaviour
             Vector3 spawnPos = spawnT ? spawnT.position : go.transform.position;
 
             builderMainSpawnWorld = spawnPos;
+            
+            var spawnState = GetComponent<PlayerSpawnState>();
+            if (spawnState) spawnState.ServerSetRespawn(spawnPos);
+
 
             transform.position = spawnPos;
             var rb = GetComponent<Rigidbody2D>();
