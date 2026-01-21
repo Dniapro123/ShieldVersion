@@ -47,11 +47,25 @@ public class RoundManagerNet : NetworkBehaviour
         if (state != RoundState.Running) return;
 
         // Attacker wygrywa jeśli reaktor zniszczony (ReactorHP robi Destroy(gameObject))
+        /*    if (reactor == null)
+        {
+            reactor = FindObjectOfType<ReactorHP>();
+            return; // nie kończ rundy tylko dlatego, że jeszcze nie znaleźliśmy reaktora
+        }
+        
         if (reactor == null)
         {
             ServerEndRound(PlayerRole.Attacker);
             return;
+        }*/
+
+        if (reactor != null && reactor.IsDestroyed)
+        {
+            ServerEndRound(PlayerRole.Attacker);
+            return;
         }
+
+
 
         // Builder wygrywa jeśli czas minął
         if (NetworkTime.time >= roundEndTime)

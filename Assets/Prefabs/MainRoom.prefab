@@ -77,7 +77,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -2044041455
   m_SortingLayer: 3
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: 21300148, guid: cf57b3e7835b02e4493371d9bc259b1b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -236,7 +236,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_Sprite: {fileID: 1992128810, guid: cf57b3e7835b02e4493371d9bc259b1b, type: 3}
-  m_Color: {r: 0.12941177, g: 0.227451, b: 0.32941177, a: 1}
+  m_Color: {r: 0.43921572, g: 0.43921572, b: 0.43921572, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 2
@@ -414,6 +414,7 @@ GameObject:
   - component: {fileID: 1369898678626076616}
   - component: {fileID: 5772136386018657338}
   - component: {fileID: 8361492565291055900}
+  - component: {fileID: 437384685550371261}
   m_Layer: 9
   m_Name: Reactor
   m_TagString: Untagged
@@ -572,6 +573,27 @@ PolygonCollider2D:
       - {x: 0.3125, y: 0.375}
       - {x: 0.083333336, y: 0.5833334}
   m_UseDelaunayMesh: 0
+--- !u!114 &437384685550371261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2552718796605336189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d373369de51ddb84a81ceb87e0cf31ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  maxHp: 200
+  hp: 200
+  destroyed: 0
+  aliveVisual: {fileID: 0}
+  destroyedVisual: {fileID: 0}
+  hitCollider: {fileID: 0}
 --- !u!1 &3490873293238900907
 GameObject:
   m_ObjectHideFlags: 0
@@ -650,8 +672,8 @@ SpriteRenderer:
   m_SortingLayerID: -2044041455
   m_SortingLayer: 3
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300148, guid: cf57b3e7835b02e4493371d9bc259b1b, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Sprite: {fileID: 1992128810, guid: cf57b3e7835b02e4493371d9bc259b1b, type: 3}
+  m_Color: {r: 0.4392157, g: 0.4392157, b: 0.4392157, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 2
@@ -1042,7 +1064,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -2044041455
   m_SortingLayer: 3
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: 21300148, guid: cf57b3e7835b02e4493371d9bc259b1b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
