@@ -34,17 +34,31 @@ public class PlayerMovement : NetworkBehaviour
         sr = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
 
-        // Stabilniej dla platformówki
         rb.freezeRotation = true;
-
-        // Klucz do "nie czepia się ścian": brak tarcia na graczu
         EnsureNoFrictionMaterial();
+    }
+
+    public override void OnStartServer()
+    {
+        // Serwer MUSI mieć collider gracza w symulacji, inaczej pociski (server-authoritative)
+        // nie wykryją trafienia. Jednocześnie nie chcemy, żeby serwer "dublował" fizykę ruchu klienta,
+        // więc robimy Rigidbody2D kinematic.
+        if (rb != null)
+        {
+            rb.simulated = true;
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.gravityScale = 0f;
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        }
     }
 
     public override void OnStartClient()
     {
-        // Zdalni gracze: wyłączona fizyka (pozycja idzie z NetworkTransform)
-        if (!isLocalPlayer && rb != null)
+        // Na zwykłych klientach wyłącz fizykę na zdalnych graczach.
+        // UWAGA: nie na hoście (isServer == true), bo wtedy wyłączysz collider również po stronie serwera.
+        if (!isServer && !isLocalPlayer && rb != null)
             rb.simulated = false;
     }
 
@@ -59,19 +73,16 @@ public class PlayerMovement : NetworkBehaviour
         if (!isLocalPlayer) return;
 
         moveInput = Input.GetAxisRaw("Horizontal");
-
         if (Input.GetKeyDown(KeyCode.Space))
             jumpPressed = true;
 
-        // flip (bez skalowania obiektu -> mniej problemów z kolizją)
         if (flipByMoveDirection && sr != null)
         {
             if (moveInput > 0.01f) sr.flipX = false;
             else if (moveInput < -0.01f) sr.flipX = true;
         }
 
-        // animacje (opcjonalnie, jeśli masz Animator i parametry)
-        if (anim != null)
+        if (anim != null && rb != null)
         {
             anim.SetBool("run", Mathf.Abs(moveInput) > 0.01f);
             anim.SetBool("grounded", IsGrounded());
@@ -82,15 +93,13 @@ public class PlayerMovement : NetworkBehaviour
     void FixedUpdate()
     {
         if (!isLocalPlayer) return;
+        if (rb == null) return;
 
-        // ruch poziomy (zero logiki "wall stick")
         rb.linearVelocity = new Vector2(moveInput * speed, rb.linearVelocity.y);
 
-        // skok
         if (jumpPressed)
         {
             jumpPressed = false;
-
             if (IsGrounded())
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         }
@@ -107,15 +116,12 @@ public class PlayerMovement : NetworkBehaviour
 
     void EnsureNoFrictionMaterial()
     {
-        // Tworzymy runtime’owo, żebyś nie musiał klikać assetów,
-        // ale możesz też zrobić asset PhysicsMaterial2D i podpiąć ręcznie.
         noFrictionMat = new PhysicsMaterial2D("NoFriction_Runtime")
         {
             friction = 0f,
             bounciness = 0f
         };
 
-        // ważne: materiał jest na Collider2D
         if (col != null)
             col.sharedMaterial = noFrictionMat;
     }

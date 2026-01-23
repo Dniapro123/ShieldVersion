@@ -11,16 +11,41 @@ public class PlayerCombatNet : NetworkBehaviour
     [Header("Fire settings")]
     public float fireRate = 8f;
     public int burstSize = 10;
-    public float burstCooldown = 1f;
+    public float burstCooldown = 1.0f;
     public int damage = 10;
 
-    float nextShotTime;
-    int burstRemaining;
-    float burstCooldownUntil;
+    float nextFireTime;
+    int shotsLeftInBurst;
+    float burstBlockUntil;
 
-    void Awake()
+    // server-side anti-spam
+    double serverNextFireTime;
+    int serverShotsLeft;
+    double serverBurstBlockUntil;
+
+    PlayerRoleNet role;
+
+    private void Awake()
     {
-        burstRemaining = burstSize;
+        role = GetComponent<PlayerRoleNet>();
+
+        if (firePoint == null)
+        {
+            var fp = transform.Find("FirePoint");
+            if (fp != null) firePoint = fp;
+        }
+
+        if (gunPivot == null)
+        {
+            var gp = transform.Find("GunPivot");
+            if (gp != null) gunPivot = gp;
+        }
+    }
+
+    void Start()
+    {
+        shotsLeftInBurst = burstSize;
+        serverShotsLeft = burstSize;
     }
 
     void Update()
@@ -28,112 +53,101 @@ public class PlayerCombatNet : NetworkBehaviour
         if (!isLocalPlayer) return;
         if (Time.timeScale <= 0) return;
 
+        if (!CanShootLocal()) return;
+
         Vector2 aimDir = GetAimDir();
-        RotateGun(aimDir);
+        if (gunPivot != null)
+        {
+            float angle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
+            gunPivot.rotation = Quaternion.Euler(0, 0, angle);
+        }
 
         if (Input.GetMouseButton(0))
             TryShoot(aimDir);
     }
 
-    void RotateGun(Vector2 dir)
+    bool CanShootLocal()
     {
-        if (gunPivot == null) return;
-        if (dir.sqrMagnitude < 0.0001f) return;
+        var gm = GamePhaseNet.Instance;
+        if (gm == null) return false;
+        if (gm.phase != GamePhase.Play) return false;
 
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        gunPivot.rotation = Quaternion.Euler(0, 0, angle);
+        if (role != null && role.IsAttacker && !gm.baseRevealed) return false;
+
+        return true;
     }
 
-    void TryShoot(Vector2 dir)
+    void TryShoot(Vector2 aimDir)
     {
-        if (!CanShootNowClient()) return;
+        if (Time.time < burstBlockUntil) return;
+        if (Time.time < nextFireTime) return;
 
-        if (Time.time < burstCooldownUntil) return;
-        if (Time.time < nextShotTime) return;
-
-        nextShotTime = Time.time + 1f / Mathf.Max(0.01f, fireRate);
-
-        if (burstSize > 0)
+        if (shotsLeftInBurst <= 0)
         {
-            if (burstRemaining <= 0)
-            {
-                burstRemaining = burstSize;
-                burstCooldownUntil = Time.time + burstCooldown;
-                return;
-            }
-            burstRemaining--;
+            shotsLeftInBurst = burstSize;
+            burstBlockUntil = Time.time + burstCooldown;
+            return;
         }
 
-        CmdShoot(dir);
+        nextFireTime = Time.time + 1f / fireRate;
+        shotsLeftInBurst--;
+
+        CmdShoot(aimDir);
     }
 
-    bool CanShootNowClient()
+    private Vector2 GetAimDir()
     {
-        // Najpewniej: tylko gdy runda RUNNING (czyli Play + baseRevealed + timer idzie)
-        if (RoundManagerNet.Instance != null)
-            return RoundManagerNet.Instance.IsRunning;
+        Camera cam = Camera.main;
+        if (cam == null) return Vector2.right;
 
-        // Fallback gdyby kiedyś RoundManagera nie było
-        if (GamePhaseNet.Instance == null) return false;
-        return GamePhaseNet.Instance.phase == GamePhase.Play && GamePhaseNet.Instance.baseRevealed;
-    }
+        Vector3 mouse = Input.mousePosition;
+        Vector3 world = cam.ScreenToWorldPoint(mouse);
+        world.z = 0;
 
-    bool CanShootNowServer()
-    {
-        if (RoundManagerNet.Instance != null)
-            return RoundManagerNet.Instance.IsRunning;
-
-        if (GamePhaseNet.Instance == null) return false;
-        return GamePhaseNet.Instance.phase == GamePhase.Play && GamePhaseNet.Instance.baseRevealed;
+        Vector3 origin = (gunPivot != null ? gunPivot.position : transform.position);
+        Vector2 dir = (world - origin);
+        if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
+        return dir.normalized;
     }
 
     [Command]
-    void CmdShoot(Vector2 dir)
+    void CmdShoot(Vector2 aimDir)
     {
-        if (!CanShootNowServer()) return;
-        if (projectilePrefab == null) return;
+        var gm = GamePhaseNet.Instance;
+        if (gm == null || gm.phase != GamePhase.Play) return;
 
-        if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
-        dir.Normalize();
+        var r = GetComponent<PlayerRoleNet>();
+        if (r != null && r.IsAttacker && !gm.baseRevealed) return;
 
-        Vector3 basePos = firePoint != null ? firePoint.position : transform.position;
-        Vector3 spawnPos = basePos + (Vector3)dir * 0.25f;
+        // rate limiting na serwerze
+        double now = NetworkTime.time;
+        if (now < serverBurstBlockUntil) return;
+        if (now < serverNextFireTime) return;
 
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        Quaternion rot = Quaternion.Euler(0, 0, angle);
+        if (serverShotsLeft <= 0)
+        {
+            serverShotsLeft = burstSize;
+            serverBurstBlockUntil = now + burstCooldown;
+            return;
+        }
+
+        serverNextFireTime = now + 1.0 / Mathf.Max(0.1f, fireRate);
+        serverShotsLeft--;
+
+        if (firePoint == null || projectilePrefab == null) return;
+
+        if (aimDir.sqrMagnitude < 0.5f) aimDir = Vector2.right;
+        aimDir.Normalize();
+
+        Vector3 spawnPos = firePoint.position + (Vector3)(aimDir * 0.8f);
+        Quaternion rot = Quaternion.Euler(0, 0, Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg);
 
         GameObject go = Instantiate(projectilePrefab, spawnPos, rot);
 
-        var proj = go.GetComponent<ProjectileNet>();
-        if (proj != null)
-        {
-            var roleNet = GetComponent<PlayerRoleNet>();
-            PlayerRole shooterRole = roleNet != null ? roleNet.role : PlayerRole.Builder;
-
-            // owner = netId gracza, żeby zawsze dało się ominąć self-hit
-            proj.ServerInit(netId, shooterRole, dir, damage);
-        }
+        var p = go.GetComponent<ProjectileNet>();
+        if (p != null)
+            p.ServerInit(netIdentity, aimDir, damage);
 
         NetworkServer.Spawn(go);
-    }
-
-    Vector2 GetAimDir()
-    {
-        if (firePoint == null)
-            return transform.localScale.x >= 0 ? Vector2.right : Vector2.left;
-
-        Camera cam = Camera.main;
-        if (cam == null)
-            return transform.localScale.x >= 0 ? Vector2.right : Vector2.left;
-
-        Vector3 mouseWorld = cam.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorld.z = 0f;
-
-        Vector2 dir = (Vector2)(mouseWorld - firePoint.position);
-
-        if (dir.sqrMagnitude < 0.0004f)
-            dir = transform.localScale.x >= 0 ? Vector2.right : Vector2.left;
-
-        return dir.normalized;
     }
 }

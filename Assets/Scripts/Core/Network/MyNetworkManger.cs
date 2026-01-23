@@ -1,30 +1,29 @@
 using Mirror;
 using UnityEngine;
 
-public class MyNetworkManger : NetworkManager
+public class MyNetworkManager : NetworkManager
 {
-    [Header("Role HP")]
-    public int builderHp = 140;
-    public int attackerHp = 100;
-
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
         base.OnServerAddPlayer(conn);
 
-        GameObject player = conn.identity.gameObject;
+        var playerObj = conn.identity.gameObject;
 
-        var roleNet = player.GetComponent<PlayerRoleNet>();
-        if (roleNet != null)
+        var roleNet = playerObj.GetComponent<PlayerRoleNet>();
+        if (roleNet == null)
         {
-            // po base.OnServerAddPlayer numPlayers zawiera już nowego gracza
-            roleNet.role = (numPlayers == 1) ? PlayerRole.Builder : PlayerRole.Attacker;
+            Debug.LogError("[NET] Player prefab missing PlayerRoleNet!");
+            return;
         }
 
-        var health = player.GetComponent<NetworkHealth>();
-        if (health != null && roleNet != null)
-        {
-            int hp = (roleNet.role == PlayerRole.Builder) ? builderHp : attackerHp;
-            health.ServerSetMaxHp(hp, refill: true);
-        }
+        // pierwszy gracz = Builder, drugi = Attacker (Host to zazwyczaj pierwszy)
+        roleNet.role = (numPlayers == 1) ? PlayerRole.Builder : PlayerRole.Attacker;
+
+        // Zamiast starego ServerSetMaxHp(...)
+        var health = playerObj.GetComponent<NetworkHealth>();
+        if (health != null)
+            health.ServerResetHP(); // ustawia maxHp wg roli + hp=max
+
+        Debug.Log($"[NET] Added player {conn.connectionId} role={roleNet.role}");
     }
 }
