@@ -1,94 +1,61 @@
+using System.Collections;
 using Mirror;
 using UnityEngine;
-using System.Collections;
 
 public class NetworkHealth : NetworkBehaviour
 {
-    [Header("HP per role")]
-    [Min(1)] public int builderMaxHp = 140;
-    [Min(1)] public int attackerMaxHp = 100;
-
-    [SyncVar] public int maxHp;
-    [SyncVar] public int hp;
-
-    [Header("Death/Respawn")]
-    public float respawnDelay = 1.5f;
+    [SyncVar] public int maxHp = 100;
+    [SyncVar] public int currentHp;
     [SyncVar] public bool isDead;
+
+    public float respawnDelay = 1.5f;
 
     public override void OnStartServer()
     {
-        ServerApplyRoleMaxHP();
-        hp = maxHp;
+        currentHp = maxHp;
         isDead = false;
     }
 
     [Server]
-    public void ServerApplyRoleMaxHP()
+    public void ServerSetMaxHp(int value, bool refill = true)
     {
-        // domyślnie
-        int target = attackerMaxHp;
-
-        var role = GetComponent<PlayerRoleNet>();
-        if (role != null)
-        {
-            if (role.IsBuilder) target = builderMaxHp;
-            else if (role.IsAttacker) target = attackerMaxHp;
-        }
-
-        maxHp = Mathf.Max(1, target);
-
-        // jeśli ktoś zmienia rolę w trakcie (raczej nie), dopasuj hp w dół
-        hp = Mathf.Clamp(hp, 0, maxHp);
+        maxHp = Mathf.Max(1, value);
+        if (refill) currentHp = maxHp;
     }
 
     [Server]
-    public void ServerResetHP()
+    public void ServerTakeDamage(int amount)
     {
-        ServerApplyRoleMaxHP();
-        hp = maxHp;
-        isDead = false;
-        RpcSetVisible(true);
-    }
-
-    [Server]
-    public void ServerTakeDamage(int dmg)
-    {
-        if (dmg <= 0) return;
         if (isDead) return;
 
-        hp = Mathf.Max(0, hp - dmg);
+        amount = Mathf.Max(0, amount);
+        if (amount == 0) return;
 
-        if (hp == 0)
-        {
-            isDead = true;
-            RpcSetVisible(false);
-            StartCoroutine(ServerRespawnAfterDelay());
-        }
+        currentHp = Mathf.Max(0, currentHp - amount);
+
+        if (currentHp <= 0)
+            ServerDie();
     }
 
     [Server]
-    IEnumerator ServerRespawnAfterDelay()
+    void ServerDie()
+    {
+        if (isDead) return;
+
+        isDead = true;
+        StartCoroutine(ServerRespawnRoutine());
+    }
+
+    [Server]
+    IEnumerator ServerRespawnRoutine()
     {
         yield return new WaitForSeconds(respawnDelay);
 
-        var spawnState = GetComponent<PlayerSpawnState>();
-        if (spawnState != null)
-            spawnState.ServerRespawnNow();
+        currentHp = maxHp;
+        isDead = false;
 
-        ServerResetHP();
-    }
-
-    [ClientRpc]
-    void RpcSetVisible(bool visible)
-    {
-        var sr = GetComponent<SpriteRenderer>();
-        if (sr) sr.enabled = visible;
-
-        var col = GetComponent<Collider2D>();
-        if (col) col.enabled = visible;
-
-        // (opcjonalnie) wyłącz ruch/atak przy dead
-        // var mv = GetComponent<PlayerMovement>(); if (mv) mv.enabled = visible;
-        // var atk = GetComponent<PlayerCombatNet>(); if (atk) atk.enabled = visible;
+        var resp = GetComponent<PlayerSpawnState>();
+        if (resp != null)
+            resp.ServerRespawnNow();
     }
 }

@@ -449,12 +449,10 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  builderMaxHp: 100
-  attackerMaxHp: 150
   maxHp: 100
-  hp: 0
-  respawnDelay: 1.5
+  currentHp: 0
   isDead: 0
+  respawnDelay: 1.5
 --- !u!114 &-3128340254650865006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -473,10 +471,10 @@ MonoBehaviour:
   firePoint: {fileID: 6524561479963940528}
   gunPivot: {fileID: 2858464413352501192}
   projectilePrefab: {fileID: 7513890016005855127, guid: 2ed24d87640f79245acec7946d9b764b, type: 3}
-  fireRate: 8
+  fireRate: 4
   burstSize: 10
-  burstCooldown: 1
-  damage: 25
+  burstCooldown: 2
+  damage: 15
 --- !u!1 &3759931742599399544
 GameObject:
   m_ObjectHideFlags: 0

@@ -19,3 +19,4 @@ public class PlayerRoleNet : NetworkBehaviour
     public bool IsBuilder => role == PlayerRole.Builder;
     public bool IsAttacker => role == PlayerRole.Attacker;
 }
+ 
