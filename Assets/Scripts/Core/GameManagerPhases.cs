@@ -101,7 +101,7 @@ public class GameManagerPhases : MonoBehaviour
                 playerRb.angularVelocity = 0f;
                 playerRb.simulated = true;
                 playerRb.bodyType = RigidbodyType2D.Dynamic;
-                playerRb.gravityScale = 1f;
+                playerRb.gravityScale = 2f;
                 playerRb.constraints = RigidbodyConstraints2D.FreezeRotation;
                 playerRb.WakeUp();
 

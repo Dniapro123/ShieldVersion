@@ -1,10 +1,13 @@
 using Mirror;
 using UnityEngine;
+using System;
 
 public class ReactorHP : NetworkBehaviour
 {
     [Header("HP")]
-    [Min(1)] public int maxHp = 200;
+    [Min(1)]
+    [SyncVar(hook = nameof(OnMaxHpChanged))]
+    public int maxHp = 200;
 
     [SyncVar(hook = nameof(OnHpChanged))]
     public int hp;
@@ -17,6 +20,9 @@ public class ReactorHP : NetworkBehaviour
     public GameObject destroyedVisual; // np. rozwalony sprite (może być null)
     public Collider2D hitCollider;     // collider do trafień (może być null)
 
+    // ✅ Event dla HUD
+    public event Action<int, int> ClientOnReactorHpChanged;
+
     public bool IsDestroyed => destroyed || hp <= 0;
 
     public override void OnStartServer()
@@ -24,10 +30,17 @@ public class ReactorHP : NetworkBehaviour
         ServerReset();
     }
 
+    public override void OnStartClient()
+    {
+        // ✅ od razu wypchnij wartości do UI po stronie klienta
+        ClientOnReactorHpChanged?.Invoke(hp, maxHp);
+    }
+
     [Server]
     public void ServerReset()
     {
-        hp = Mathf.Clamp(maxHp, 1, 999999);
+        maxHp = Mathf.Clamp(maxHp, 1, 999999);
+        hp = maxHp;
         destroyed = false;
 
         RpcApplyVisual(false);
@@ -55,10 +68,15 @@ public class ReactorHP : NetworkBehaviour
         }
     }
 
+    // ✅ Hooki SyncVar -> UI
     void OnHpChanged(int oldHp, int newHp)
     {
-        // Na razie nic — w przyszłości tu podepniesz UI hp.
-        // Debug.Log($"Reactor HP: {newHp}/{maxHp}");
+        ClientOnReactorHpChanged?.Invoke(newHp, maxHp);
+    }
+
+    void OnMaxHpChanged(int oldMax, int newMax)
+    {
+        ClientOnReactorHpChanged?.Invoke(hp, newMax);
     }
 
     [ClientRpc]
@@ -69,12 +87,4 @@ public class ReactorHP : NetworkBehaviour
 
         if (hitCollider) hitCollider.enabled = !isDestroyed;
     }
-
-    [ServerCallback]
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.K))
-            ServerTakeDamage(999999);
-    }
-
 }

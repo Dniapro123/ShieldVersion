@@ -48,7 +48,7 @@ public class PhaseGate : NetworkBehaviour
             if (allowMove)
             {
                 rb.bodyType = RigidbodyType2D.Dynamic;
-                rb.gravityScale = 1f;
+                rb.gravityScale = 2f;
                 rb.constraints = RigidbodyConstraints2D.FreezeRotation;
                 rb.simulated = true;
             }

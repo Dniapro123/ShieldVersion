@@ -1,25 +1,42 @@
 using Mirror;
 using UnityEngine;
+using System;
 using System.Collections;
 
 public class NetworkHealth : NetworkBehaviour
 {
     [Header("HP per role")]
-    [Min(1)] public int builderMaxHp = 140;
-    [Min(1)] public int attackerMaxHp = 100;
+    [Min(1)] public int builderMaxHp = 100;
+    [Min(1)] public int attackerMaxHp = 150;
 
-    [SyncVar] public int maxHp;
-    [SyncVar] public int hp;
+    [SyncVar(hook = nameof(OnMaxHpChanged))] public int maxHp;
+    [SyncVar(hook = nameof(OnHpChanged))] public int hp;
 
     [Header("Death/Respawn")]
     public float respawnDelay = 1.5f;
+
+    [Tooltip("Jeśli false (np. bot), obiekt po śmierci zostanie zniszczony (bez respawnu).")]
+    public bool respawnOnDeath = true;
+
+    [Tooltip("Opóźnienie przed zniszczeniem obiektu, gdy respawnOnDeath=false.")]
+    public float destroyOnDeathDelay = 0.05f;
+
     [SyncVar] public bool isDead;
+
+    // UI/event (lokalne, nie sieciowe) — HUD może się tu podpinać
+    public event Action<int, int> ClientOnHealthChanged;
 
     public override void OnStartServer()
     {
-        // Rola jest ustawiana po base.OnServerAddPlayer(),
+        // Rola zwykle jest ustawiana chwilę po spawn,
         // więc inicjalizujemy po 1 klatce.
         StartCoroutine(ServerInitAfterRoleAssigned());
+    }
+
+    public override void OnStartClient()
+    {
+        // wypchnij wartości od razu, żeby UI miało startowy stan
+        ClientOnHealthChanged?.Invoke(hp, maxHp);
     }
 
     [Server]
@@ -69,7 +86,11 @@ public class NetworkHealth : NetworkBehaviour
         {
             isDead = true;
             RpcSetVisible(false);
-            StartCoroutine(ServerRespawnAfterDelay());
+
+            if (respawnOnDeath)
+                StartCoroutine(ServerRespawnAfterDelay());
+            else
+                StartCoroutine(ServerDestroyAfterDelay());
         }
     }
 
@@ -78,12 +99,26 @@ public class NetworkHealth : NetworkBehaviour
     {
         yield return new WaitForSeconds(respawnDelay);
 
+        // Gracze mają PlayerSpawnState (boty zwykle nie)
         var spawnState = GetComponent<PlayerSpawnState>();
         if (spawnState != null)
             spawnState.ServerRespawnNow();
 
         ServerResetHP();
     }
+
+    [Server]
+    IEnumerator ServerDestroyAfterDelay()
+    {
+        yield return new WaitForSeconds(destroyOnDeathDelay);
+
+        if (isServer && gameObject != null)
+            NetworkServer.Destroy(gameObject);
+    }
+
+    // Hooks (client) -> UI
+    void OnHpChanged(int oldValue, int newValue) => ClientOnHealthChanged?.Invoke(newValue, maxHp);
+    void OnMaxHpChanged(int oldValue, int newValue) => ClientOnHealthChanged?.Invoke(hp, newValue);
 
     [ClientRpc]
     void RpcSetVisible(bool visible)
