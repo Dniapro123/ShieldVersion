@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 4572516283757716849}
   - component: {fileID: 8144277013339613561}
   - component: {fileID: 8804064204486748750}
+  - component: {fileID: 5714406350241897017}
   m_Layer: 11
   m_Name: Firetrap
   m_TagString: Enemy
@@ -78,8 +79,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 960489153
-  m_SortingLayer: 0
+  m_SortingLayerID: -2044041455
+  m_SortingLayer: 4
   m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: 84b0d89aa2c8bfb4c8c1d378fa972fbd, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -150,7 +151,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b8c964af2b8d9b49b2c9f86a4ab72ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damage: 1
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  damage: 25
   activationDelay: 2
   activeTime: 2
   firetrapSound: {fileID: 8300000, guid: aa5a5b9e645a39444b775fb4ea00f168, type: 3}
@@ -209,3 +213,37 @@ MonoBehaviour:
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
+--- !u!114 &5714406350241897017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4572516283757716860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 4572516283757716862}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  onlySyncOnChangeCorrectionMultiplier: 2
+  useFixedUpdate: 0
+  rotationSensitivity: 0.01
+  positionPrecision: 0.01
+  scalePrecision: 0.01

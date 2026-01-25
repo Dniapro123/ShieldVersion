@@ -13,13 +13,15 @@ GameObject:
   - component: {fileID: 7456438145604788961}
   - component: {fileID: 7456438145604788960}
   - component: {fileID: 7456438145604788963}
+  - component: {fileID: 1475082709205901054}
+  - component: {fileID: -5565584192598292821}
   m_Layer: 11
   m_Name: Arrow
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7456438145604788962
 Transform:
   m_ObjectHideFlags: 0
@@ -79,7 +81,7 @@ SpriteRenderer:
   m_SortingLayerID: -1775712891
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 458943349695503207, guid: a375bfb3aa3adc340a899968ef23b6c8, type: 3}
+  m_Sprite: {fileID: 2299762976014267228, guid: a375bfb3aa3adc340a899968ef23b6c8, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -175,6 +177,65 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2b7c1c07c658c94e9b5d4823be076f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   damage: 1
+  onlyDamageAttacker: 1
+  requirePlayPhase: 1
+  requireBaseRevealed: 0
+  destroySelfOnHit: 0
   speed: 10
   resetTime: 5
+  destroyDelay: 0.25
+--- !u!114 &1475082709205901054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7456438145604788965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  _assetId: 1624804945
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &-5565584192598292821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7456438145604788965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 7456438145604788962}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  onlySyncOnChangeCorrectionMultiplier: 2
+  useFixedUpdate: 0
+  rotationSensitivity: 0.01
+  positionPrecision: 0.01
+  scalePrecision: 0.01

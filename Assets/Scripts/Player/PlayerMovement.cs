@@ -57,17 +57,33 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void OnStartClient()
     {
-        // Na zwykłych klientach wyłącz fizykę na zdalnych graczach.
-        // UWAGA: nie na hoście (isServer == true), bo wtedy wyłączysz collider również po stronie serwera.
-        if (!isServer && !isLocalPlayer && rb != null)
-            rb.simulated = false;
+        // Zdalni gracze:
+        // - na zwykłym kliencie wyłączamy fizykę (pozycja idzie z NetworkTransform)
+        // - na HOŚCIE nie wyłączamy, bo to zabija triggery na serwerze (ta sama instancja!)
+        if (!isLocalPlayer && rb != null)
+        {
+            if (isServer)
+            {
+                rb.simulated = true;
+                rb.bodyType = RigidbodyType2D.Kinematic;
+                rb.linearVelocity = Vector2.zero;
+            }
+            else
+            {
+                rb.simulated = false;
+            }
+        }
     }
 
     public override void OnStartLocalPlayer()
     {
         if (rb != null)
+        {
             rb.simulated = true;
+            rb.bodyType = RigidbodyType2D.Dynamic;
+        }
     }
+
 
     void Update()
     {

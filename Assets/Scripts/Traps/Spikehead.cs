@@ -1,12 +1,18 @@
+using Mirror;
 using UnityEngine;
 
+/// <summary>
+/// Spikehead – serwer decyduje o ataku i ruchu.
+/// Dmg jest w EnemyDamage (tylko attacker, Play).
+/// </summary>
 public class Spikehead : EnemyDamage
 {
     [Header("SpikeHead Attributes")]
-    [SerializeField] private float speed;
-    [SerializeField] private float range;
-    [SerializeField] private float checkDelay;
+    [SerializeField] private float speed = 6f;
+    [SerializeField] private float range = 4f;
+    [SerializeField] private float checkDelay = 0.25f;
     [SerializeField] private LayerMask playerLayer;
+
     private Vector3[] directions = new Vector3[4];
     private Vector3 destination;
     private float checkTimer;
@@ -17,13 +23,20 @@ public class Spikehead : EnemyDamage
 
     private void OnEnable()
     {
-        Stop();
+        if (NetworkServer.active)
+            Stop();
     }
+
+    [ServerCallback]
     private void Update()
     {
-        //Move spikehead to destination only if attacking
+        if (!NetworkServer.active) return;
+        if (!CanDamageNow()) return;
+
         if (attacking)
+        {
             transform.Translate(destination * Time.deltaTime * speed);
+        }
         else
         {
             checkTimer += Time.deltaTime;
@@ -31,11 +44,12 @@ public class Spikehead : EnemyDamage
                 CheckForPlayer();
         }
     }
+
+    [Server]
     private void CheckForPlayer()
     {
         CalculateDirections();
 
-        //Check if spikehead sees player in all 4 directions
         for (int i = 0; i < directions.Length; i++)
         {
             Debug.DrawRay(transform.position, directions[i], Color.red);
@@ -43,29 +57,48 @@ public class Spikehead : EnemyDamage
 
             if (hit.collider != null && !attacking)
             {
+                var role = hit.collider.GetComponentInParent<PlayerRoleNet>();
+                if (role == null || !role.IsAttacker) continue;
+
                 attacking = true;
                 destination = directions[i];
-                checkTimer = 0;
+                checkTimer = 0f;
+                return;
             }
         }
+
+        checkTimer = 0f;
     }
+
     private void CalculateDirections()
     {
-        directions[0] = transform.right * range; //Right direction
-        directions[1] = -transform.right * range; //Left direction
-        directions[2] = transform.up * range; //Up direction
-        directions[3] = -transform.up * range; //Down direction
+        directions[0] = transform.right * range;
+        directions[1] = -transform.right * range;
+        directions[2] = transform.up * range;
+        directions[3] = -transform.up * range;
     }
+
+    [Server]
     private void Stop()
     {
-        destination = transform.position; //Set destination as current position so it doesn't move
+        destination = transform.position;
         attacking = false;
     }
 
+    [ServerCallback]
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        SoundManager.instance.PlaySound(impactSound);
+        if (!CanDamageNow()) return;
+
+        RpcImpactSfx();
         base.OnTriggerEnter2D(collision);
-        Stop(); //Stop spikehead once he hits something
+        Stop();
+    }
+
+    [ClientRpc]
+    private void RpcImpactSfx()
+    {
+        if (SoundManager.instance != null && impactSound != null)
+            SoundManager.instance.PlaySound(impactSound);
     }
 }

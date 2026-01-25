@@ -1,23 +1,32 @@
+using Mirror;
 using UnityEngine;
 using System.Collections;
 
-public class Firetrap : MonoBehaviour
+/// <summary>
+/// Firetrap multiplayer:
+/// - logika i dmg liczone na serwerze
+/// - animacje/kolor/SFX odpalane RPC na klientach
+/// - dmg idzie w NetworkHealth (tylko Attacker), tylko w Play
+/// </summary>
+public class Firetrap : NetworkBehaviour
 {
-    [SerializeField] private float damage;
+    [SerializeField] private float damage = 10f;
 
     [Header("Firetrap Timers")]
-    [SerializeField] private float activationDelay;
-    [SerializeField] private float activeTime;
-    private Animator anim;
-    private SpriteRenderer spriteRend;
+    [SerializeField] private float activationDelay = 0.35f;
+    [SerializeField] private float activeTime = 1.2f;
 
     [Header("SFX")]
     [SerializeField] private AudioClip firetrapSound;
 
-    private bool triggered; //when the trap gets triggered
-    private bool active; //when the trap is active and can hurt the player
+    private Animator anim;
+    private SpriteRenderer spriteRend;
 
-    private Health playerHealth;
+    private bool triggered;
+    private bool active;
+
+    private NetworkHealth targetHp;
+    private float damageAcc;
 
     private void Awake()
     {
@@ -25,47 +34,108 @@ public class Firetrap : MonoBehaviour
         spriteRend = GetComponent<SpriteRenderer>();
     }
 
+    [Server]
+    private bool CanDamageNow()
+    {
+        if (!NetworkServer.active) return false;
+        var gp = GamePhaseNet.Instance;
+        if (gp == null) return true;
+        return gp.phase == GamePhase.Play;
+    }
+
+    [ServerCallback]
     private void Update()
     {
-        if (playerHealth != null && active)
-            playerHealth.TakeDamage(damage);
-    }
+        if (!NetworkServer.active) return;
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.tag == "Player")
+        if (!CanDamageNow())
         {
-            playerHealth = collision.GetComponent<Health>();
+            targetHp = null;
+            damageAcc = 0f;
+            return;
+        }
 
-            if (!triggered)
-                StartCoroutine(ActivateFiretrap());
-
-            if (active)
-                collision.GetComponent<Health>().TakeDamage(damage);
+        if (active && targetHp != null && !targetHp.isDead)
+        {
+            // damage traktujemy jako DPS
+            damageAcc += damage * Time.deltaTime;
+            int d = Mathf.FloorToInt(damageAcc);
+            if (d > 0)
+            {
+                damageAcc -= d;
+                targetHp.ServerTakeDamage(d);
+            }
         }
     }
+
+    [ServerCallback]
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (!CanDamageNow()) return;
+
+        var role = collision.GetComponentInParent<PlayerRoleNet>();
+        if (role == null || !role.IsAttacker) return;
+
+        targetHp = collision.GetComponentInParent<NetworkHealth>();
+        if (targetHp == null) return;
+
+        if (!triggered)
+            StartCoroutine(ServerActivateFiretrap());
+    }
+
+    [ServerCallback]
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.tag == "Player")
-            playerHealth = null;
+        if (!NetworkServer.active) return;
+
+        var role = collision.GetComponentInParent<PlayerRoleNet>();
+        if (role == null || !role.IsAttacker) return;
+
+        targetHp = null;
+        damageAcc = 0f;
     }
-    private IEnumerator ActivateFiretrap()
+
+    [Server]
+    private IEnumerator ServerActivateFiretrap()
     {
-        //turn the sprite red to notify the player and trigger the trap
         triggered = true;
-        spriteRend.color = Color.red;
 
-        //Wait for delay, activate trap, turn on animation, return color back to normal
+        RpcSetColor(new Color(1f, 0f, 0f, 1f));
         yield return new WaitForSeconds(activationDelay);
-        SoundManager.instance.PlaySound(firetrapSound);
-        spriteRend.color = Color.white; //turn the sprite back to its initial color
-        active = true;
-        anim.SetBool("activated", true);
 
-        //Wait until X seconds, deactivate trap and reset all variables and animator
+        RpcPlaySfx();
+        RpcSetColor(Color.white);
+        active = true;
+        RpcSetActivated(true);
+
         yield return new WaitForSeconds(activeTime);
+
         active = false;
         triggered = false;
-        anim.SetBool("activated", false);
+        RpcSetActivated(false);
+
+        targetHp = null;
+        damageAcc = 0f;
+    }
+
+    [ClientRpc]
+    private void RpcSetActivated(bool on)
+    {
+        if (anim != null)
+            anim.SetBool("activated", on);
+    }
+
+    [ClientRpc]
+    private void RpcSetColor(Color c)
+    {
+        if (spriteRend != null)
+            spriteRend.color = c;
+    }
+
+    [ClientRpc]
+    private void RpcPlaySfx()
+    {
+        if (SoundManager.instance != null && firetrapSound != null)
+            SoundManager.instance.PlaySound(firetrapSound);
     }
 }
