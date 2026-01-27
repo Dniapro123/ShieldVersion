@@ -15,17 +15,17 @@ GameObject:
   - component: {fileID: 4210261512555615307}
   - component: {fileID: -6154611892210705095}
   - component: {fileID: 2699250798201964957}
+  - component: {fileID: 1114025763498673997}
+  - component: {fileID: 1424784515820879774}
   - component: {fileID: 1809300054197355895}
   - component: {fileID: -3627152729919422391}
   - component: {fileID: 8190411662333204724}
-  - component: {fileID: 1114025763498673997}
   - component: {fileID: 9074121635353155908}
   - component: {fileID: 3461585532982604225}
   - component: {fileID: -8673240968914153924}
   - component: {fileID: -4328485545263290100}
   - component: {fileID: 5235133368138338572}
   - component: {fileID: 1097647441687597244}
-  - component: {fileID: 1424784515820879774}
   - component: {fileID: -3128340254650865006}
   m_Layer: 0
   m_Name: Player
@@ -253,6 +253,45 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!114 &1114025763498673997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb8f775c8d4ad9f448dee079dccef0e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  role: 0
+--- !u!114 &1424784515820879774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1231400657462806853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88f621ed75eba084890b034fabaed09e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  builderMaxHp: 140
+  attackerMaxHp: 100
+  maxHp: 100
+  hp: 0
+  respawnDelay: 1.5
+  respawnOnDeath: 1
+  destroyOnDeathDelay: 0.05
+  isDead: 0
 --- !u!114 &1809300054197355895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -317,22 +356,6 @@ MonoBehaviour:
   ghostSortingOrder: 999
   ghostOk: {r: 0, g: 1, b: 0, a: 0.35}
   ghostBad: {r: 1, g: 0, b: 0, a: 0.35}
---- !u!114 &1114025763498673997
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1231400657462806853}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb8f775c8d4ad9f448dee079dccef0e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  role: 0
 --- !u!114 &9074121635353155908
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -434,27 +457,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   respawnWorldPos: {x: 0, y: 0, z: 0}
---- !u!114 &1424784515820879774
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1231400657462806853}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88f621ed75eba084890b034fabaed09e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  builderMaxHp: 140
-  attackerMaxHp: 100
-  maxHp: 100
-  hp: 0
-  respawnDelay: 1.5
-  isDead: 0
+  extraUpOffset: 0.02
 --- !u!114 &-3128340254650865006
 MonoBehaviour:
   m_ObjectHideFlags: 0
