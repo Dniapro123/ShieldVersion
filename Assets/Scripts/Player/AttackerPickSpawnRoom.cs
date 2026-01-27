@@ -72,30 +72,26 @@ public class AttackerPickSpawnRoom : NetworkBehaviour
         Transform t = room.transform.Find("Spawn_Attacker");
         if (t != null) spawnPos = t.position;
 
-        // zapisz respawn
-        if (spawnState) spawnState.ServerSetRespawn(spawnPos);
+        // zapisz respawn + zapamiętaj spawn attackera dla reconnectu
+if (spawnState) spawnState.ServerSetRespawn(spawnPos);
+gm.ServerSetAttackerSpawn(spawnPos);
 
-        // TELEPORT (server)
-        ServerTeleport(spawnPos);
-
-        // TELEPORT (client-owner) -> żeby NetworkTransform nie cofnął
-        if (connectionToClient != null)
-            TargetTeleport(connectionToClient, spawnPos);
-
-        // reveal bazy -> FrontCover OFF
+// teleport serwerowy + natychmiast do wszystkich klientów (ważne przy NetworkTransform Client->Server)
+if (spawnState) spawnState.ServerTeleportAll(spawnPos);
+else
+{
+    // fallback (gdyby prefab nie miał PlayerSpawnState)
+    transform.position = spawnPos;
+    if (rb) rb.linearVelocity = Vector2.zero;
+    if (nt) nt.ResetState();
+    RpcTeleportFallback(spawnPos);
+}
+// reveal bazy -> FrontCover OFF
         gm.ServerRevealBase();
     }
 
-    [Server]
-    void ServerTeleport(Vector3 pos)
-    {
-        transform.position = pos;
-        if (rb) rb.linearVelocity = Vector2.zero;
-        if (nt) nt.ResetState();
-    }
-
-    [TargetRpc]
-    void TargetTeleport(NetworkConnectionToClient conn, Vector3 pos)
+        [ClientRpc]
+    void RpcTeleportFallback(Vector3 pos)
     {
         transform.position = pos;
         if (rb) rb.linearVelocity = Vector2.zero;

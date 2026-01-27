@@ -121,12 +121,12 @@ public class NetworkHealth : NetworkBehaviour
     void OnMaxHpChanged(int oldValue, int newValue) => ClientOnHealthChanged?.Invoke(hp, newValue);
 
     [ClientRpc]
-    void RpcSetVisible(bool visible)
-    {
-        var sr = GetComponent<SpriteRenderer>();
-        if (sr) sr.enabled = visible;
-
-        var col = GetComponent<Collider2D>();
-        if (col) col.enabled = visible;
-    }
+void RpcSetVisible(bool visible)
+{
+    // UWAGA: w trybie HOST (server+client w jednym procesie) ClientRpc wykona się też na instancji serwera.
+    // Wyłączanie Collider2D tutaj potrafi psuć serwerową fizykę (trafienia, bounds do respawnu, itp.).
+    // Dlatego sterujemy TYLKO wizualami.
+    foreach (var sr in GetComponentsInChildren<SpriteRenderer>(true))
+        sr.enabled = visible;
+}
 }

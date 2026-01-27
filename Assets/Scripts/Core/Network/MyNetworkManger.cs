@@ -24,6 +24,25 @@ public class MyNetworkManager : NetworkManager
         if (health != null)
             health.ServerResetHP(); // ustawia maxHp wg roli + hp=max
 
+
+// Jeśli attacker dołącza / wraca do gry już po reveal (czyli po wyborze spawnu),
+// to od razu ustawiamy go na zapisanym spawnie (reconnect fix).
+var gm = GamePhaseNet.Instance;
+if (gm != null && roleNet.role == PlayerRole.Attacker &&
+    gm.phase == GamePhase.Play && gm.baseRevealed && gm.attackerSpawnSet)
+{
+    var spawnState = playerObj.GetComponent<PlayerSpawnState>();
+    if (spawnState != null)
+    {
+        spawnState.ServerSetRespawn(gm.attackerSpawnPos);
+        spawnState.ServerTeleportAll(gm.attackerSpawnPos);
+    }
+    else
+    {
+        playerObj.transform.position = gm.attackerSpawnPos;
+    }
+}
+
         Debug.Log($"[NET] Added player {conn.connectionId} role={roleNet.role}");
     }
 }
