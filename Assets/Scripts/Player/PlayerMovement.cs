@@ -88,6 +88,7 @@ public class PlayerMovement : NetworkBehaviour
     void Update()
     {
         if (!isLocalPlayer) return;
+        anim.SetFloat("Speed", Mathf.Abs(moveInput));
 
         moveInput = Input.GetAxisRaw("Horizontal");
         if (Input.GetKeyDown(KeyCode.Space))
