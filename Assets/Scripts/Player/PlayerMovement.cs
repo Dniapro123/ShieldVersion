@@ -14,7 +14,9 @@ public class PlayerMovement : NetworkBehaviour
     public float groundCheckDistance = 0.12f;
     [Range(0.5f, 1f)] public float groundCheckWidthScale = 0.9f;
 
-    [Header("Optional visuals")]
+    [Header("Facing")]
+    [Tooltip("Zaznacz jeśli sprite DOMYŚLNIE patrzy w PRAWO. Jeśli Twoja postać domyślnie patrzy w LEWO (i w prefabie masz FlipX=1), ustaw FALSE.")]
+    public bool spriteFacesRight = false;
     public bool flipByMoveDirection = true;
 
     Rigidbody2D rb;
@@ -25,6 +27,8 @@ public class PlayerMovement : NetworkBehaviour
     float moveInput;
     bool jumpPressed;
 
+    float defaultGravity;
+
     PhysicsMaterial2D noFrictionMat;
 
     void Awake()
@@ -34,45 +38,37 @@ public class PlayerMovement : NetworkBehaviour
         sr = GetComponentInChildren<SpriteRenderer>();
         anim = GetComponentInChildren<Animator>();
 
+        defaultGravity = rb != null ? rb.gravityScale : 1f;
 
-        rb.freezeRotation = true;
+        if (rb != null) rb.freezeRotation = true;
         EnsureNoFrictionMaterial();
+    }
+
+    static bool HasAnimParam(Animator a, string name, AnimatorControllerParameterType type)
+    {
+        if (a == null) return false;
+        foreach (var p in a.parameters)
+            if (p.name == name && p.type == type) return true;
+        return false;
     }
 
     public override void OnStartServer()
     {
-        // Serwer MUSI mieć collider gracza w symulacji, inaczej pociski (server-authoritative)
-        // nie wykryją trafienia. Jednocześnie nie chcemy, żeby serwer "dublował" fizykę ruchu klienta,
-        // więc robimy Rigidbody2D kinematic.
+        // SERWER: NIE wyłączamy grawitacji.
+        // Musi być simulated=true (trafienia), ale nie psujemy fizyki.
         if (rb != null)
         {
             rb.simulated = true;
-            rb.bodyType = RigidbodyType2D.Kinematic;
-            rb.gravityScale = 0f;
-            rb.linearVelocity = Vector2.zero;
-            rb.angularVelocity = 0f;
-            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            rb.freezeRotation = true;
         }
     }
 
     public override void OnStartClient()
     {
-        // Zdalni gracze:
-        // - na zwykłym kliencie wyłączamy fizykę (pozycja idzie z NetworkTransform)
-        // - na HOŚCIE nie wyłączamy, bo to zabija triggery na serwerze (ta sama instancja!)
-        if (!isLocalPlayer && rb != null)
-        {
-            if (isServer)
-            {
-                rb.simulated = true;
-                rb.bodyType = RigidbodyType2D.Kinematic;
-                rb.linearVelocity = Vector2.zero;
-            }
-            else
-            {
-                rb.simulated = false;
-            }
-        }
+        // Remote na zwykłym kliencie może mieć wyłączoną fizykę (pozycja idzie z NetworkTransform).
+        // Na hoście NIE wyłączamy, bo to ta sama instancja co serwer.
+        if (!isLocalPlayer && rb != null && !isServer)
+            rb.simulated = false;
     }
 
     public override void OnStartLocalPlayer()
@@ -81,30 +77,37 @@ public class PlayerMovement : NetworkBehaviour
         {
             rb.simulated = true;
             rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.gravityScale = defaultGravity; // <<< kluczowe (naprawia "wiszenie" po host spawnie)
+            rb.freezeRotation = true;
         }
     }
-
 
     void Update()
     {
         if (!isLocalPlayer) return;
-        anim.SetFloat("Speed", Mathf.Abs(moveInput));
 
         moveInput = Input.GetAxisRaw("Horizontal");
+
         if (Input.GetKeyDown(KeyCode.Space))
             jumpPressed = true;
 
-        if (flipByMoveDirection && sr != null)
+        // Animator (u Ciebie w controllerze są: Speed, Grounded, Attack, Hurt)
+        if (anim != null)
         {
-            if (moveInput > 0.01f) sr.flipX = false;
-            else if (moveInput < -0.01f) sr.flipX = true;
+            if (HasAnimParam(anim, "Speed", AnimatorControllerParameterType.Float))
+                anim.SetFloat("Speed", Mathf.Abs(moveInput));
+
+            if (HasAnimParam(anim, "Grounded", AnimatorControllerParameterType.Bool))
+                anim.SetBool("Grounded", IsGrounded());
         }
 
-        if (anim != null && rb != null)
+        // Facing / Flip
+        if (flipByMoveDirection && sr != null)
         {
-            anim.SetBool("run", Mathf.Abs(moveInput) > 0.01f);
-            anim.SetBool("grounded", IsGrounded());
-            anim.SetFloat("yVel", rb.linearVelocity.y);
+            if (moveInput > 0.01f)
+                sr.flipX = spriteFacesRight ? false : true;   // idziesz w prawo
+            else if (moveInput < -0.01f)
+                sr.flipX = spriteFacesRight ? true : false;   // idziesz w lewo
         }
     }
 

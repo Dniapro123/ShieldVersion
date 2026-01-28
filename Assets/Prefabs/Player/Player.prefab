@@ -157,6 +157,7 @@ MonoBehaviour:
     m_Bits: 512
   groundCheckDistance: 0.12
   groundCheckWidthScale: 0.9
+  spriteFacesRight: 0
   flipByMoveDirection: 1
 --- !u!61 &4210261512555615307
 BoxCollider2D:
@@ -327,6 +328,7 @@ MonoBehaviour:
   syncInterval: 0
   roomPrefabs:
   - {fileID: 2349251759251770945, guid: e300b3ba09a0b214d87faaea474fa582, type: 3}
+  - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
   - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
   mainRoomPrefabIndex: 0
   mainRoomNameHint: MainRoom

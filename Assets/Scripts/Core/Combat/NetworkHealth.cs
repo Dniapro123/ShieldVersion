@@ -14,28 +14,28 @@ public class NetworkHealth : NetworkBehaviour
 
     [Header("Death/Respawn")]
     public float respawnDelay = 1.5f;
-
-    [Tooltip("Jeśli false (np. bot), obiekt po śmierci zostanie zniszczony (bez respawnu).")]
     public bool respawnOnDeath = true;
-
-    [Tooltip("Opóźnienie przed zniszczeniem obiektu, gdy respawnOnDeath=false.")]
     public float destroyOnDeathDelay = 0.05f;
 
     [SyncVar] public bool isDead;
 
-    // UI/event (lokalne, nie sieciowe) — HUD może się tu podpinać
     public event Action<int, int> ClientOnHealthChanged;
+
+    static bool HasAnimParam(Animator a, string name, AnimatorControllerParameterType type)
+    {
+        if (a == null) return false;
+        foreach (var p in a.parameters)
+            if (p.name == name && p.type == type) return true;
+        return false;
+    }
 
     public override void OnStartServer()
     {
-        // Rola zwykle jest ustawiana chwilę po spawn,
-        // więc inicjalizujemy po 1 klatce.
         StartCoroutine(ServerInitAfterRoleAssigned());
     }
 
     public override void OnStartClient()
     {
-        // wypchnij wartości od razu, żeby UI miało startowy stan
         ClientOnHealthChanged?.Invoke(hp, maxHp);
     }
 
@@ -43,17 +43,16 @@ public class NetworkHealth : NetworkBehaviour
     IEnumerator ServerInitAfterRoleAssigned()
     {
         yield return null;
-
         ServerApplyRoleMaxHP();
         hp = maxHp;
         isDead = false;
+        RpcSetVisible(true);
     }
 
     [Server]
     public void ServerApplyRoleMaxHP()
     {
         int target = attackerMaxHp;
-
         var role = GetComponent<PlayerRoleNet>();
         if (role != null)
         {
@@ -74,6 +73,14 @@ public class NetworkHealth : NetworkBehaviour
         RpcSetVisible(true);
     }
 
+    [ClientRpc]
+    void RpcPlayHurt()
+    {
+        var a = GetComponentInChildren<Animator>();
+        if (a != null && HasAnimParam(a, "Hurt", AnimatorControllerParameterType.Trigger))
+            a.SetTrigger("Hurt");
+    }
+
     [Server]
     public void ServerTakeDamage(int dmg)
     {
@@ -81,6 +88,9 @@ public class NetworkHealth : NetworkBehaviour
         if (isDead) return;
 
         hp = Mathf.Max(0, hp - dmg);
+
+        if (hp > 0)
+            RpcPlayHurt();
 
         if (hp == 0)
         {
@@ -99,7 +109,6 @@ public class NetworkHealth : NetworkBehaviour
     {
         yield return new WaitForSeconds(respawnDelay);
 
-        // Gracze mają PlayerSpawnState (boty zwykle nie)
         var spawnState = GetComponent<PlayerSpawnState>();
         if (spawnState != null)
             spawnState.ServerRespawnNow();
@@ -116,17 +125,13 @@ public class NetworkHealth : NetworkBehaviour
             NetworkServer.Destroy(gameObject);
     }
 
-    // Hooks (client) -> UI
     void OnHpChanged(int oldValue, int newValue) => ClientOnHealthChanged?.Invoke(newValue, maxHp);
     void OnMaxHpChanged(int oldValue, int newValue) => ClientOnHealthChanged?.Invoke(hp, newValue);
 
     [ClientRpc]
-void RpcSetVisible(bool visible)
-{
-    // UWAGA: w trybie HOST (server+client w jednym procesie) ClientRpc wykona się też na instancji serwera.
-    // Wyłączanie Collider2D tutaj potrafi psuć serwerową fizykę (trafienia, bounds do respawnu, itp.).
-    // Dlatego sterujemy TYLKO wizualami.
-    foreach (var sr in GetComponentsInChildren<SpriteRenderer>(true))
-        sr.enabled = visible;
-}
+    void RpcSetVisible(bool visible)
+    {
+        foreach (var sr in GetComponentsInChildren<SpriteRenderer>(true))
+            sr.enabled = visible;
+    }
 }

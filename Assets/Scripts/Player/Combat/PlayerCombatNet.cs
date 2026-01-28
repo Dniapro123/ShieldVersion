@@ -18,16 +18,17 @@ public class PlayerCombatNet : NetworkBehaviour
     int shotsLeftInBurst;
     float burstBlockUntil;
 
-    // server-side anti-spam
     double serverNextFireTime;
     int serverShotsLeft;
     double serverBurstBlockUntil;
 
     PlayerRoleNet role;
+    Animator anim;
 
-    private void Awake()
+    void Awake()
     {
         role = GetComponent<PlayerRoleNet>();
+        anim = GetComponentInChildren<Animator>();
 
         if (firePoint == null)
         {
@@ -40,6 +41,14 @@ public class PlayerCombatNet : NetworkBehaviour
             var gp = transform.Find("GunPivot");
             if (gp != null) gunPivot = gp;
         }
+    }
+
+    static bool HasAnimParam(Animator a, string name, AnimatorControllerParameterType type)
+    {
+        if (a == null) return false;
+        foreach (var p in a.parameters)
+            if (p.name == name && p.type == type) return true;
+        return false;
     }
 
     void Start()
@@ -73,7 +82,6 @@ public class PlayerCombatNet : NetworkBehaviour
         if (gm.phase != GamePhase.Play) return false;
 
         if (role != null && role.IsAttacker && !gm.baseRevealed) return false;
-
         return true;
     }
 
@@ -89,13 +97,13 @@ public class PlayerCombatNet : NetworkBehaviour
             return;
         }
 
-        nextFireTime = Time.time + 1f / fireRate;
+        nextFireTime = Time.time + 1f / Mathf.Max(0.1f, fireRate);
         shotsLeftInBurst--;
 
         CmdShoot(aimDir);
     }
 
-    private Vector2 GetAimDir()
+    Vector2 GetAimDir()
     {
         Camera cam = Camera.main;
         if (cam == null) return Vector2.right;
@@ -110,6 +118,14 @@ public class PlayerCombatNet : NetworkBehaviour
         return dir.normalized;
     }
 
+    [ClientRpc]
+    void RpcPlayAttack()
+    {
+        if (anim == null) anim = GetComponentInChildren<Animator>();
+        if (anim != null && HasAnimParam(anim, "Attack", AnimatorControllerParameterType.Trigger))
+            anim.SetTrigger("Attack");
+    }
+
     [Command]
     void CmdShoot(Vector2 aimDir)
     {
@@ -119,7 +135,6 @@ public class PlayerCombatNet : NetworkBehaviour
         var r = GetComponent<PlayerRoleNet>();
         if (r != null && r.IsAttacker && !gm.baseRevealed) return;
 
-        // rate limiting na serwerze
         double now = NetworkTime.time;
         if (now < serverBurstBlockUntil) return;
         if (now < serverNextFireTime) return;
@@ -149,5 +164,7 @@ public class PlayerCombatNet : NetworkBehaviour
             p.ServerInit(netIdentity, aimDir, damage);
 
         NetworkServer.Spawn(go);
+
+        RpcPlayAttack();
     }
 }
