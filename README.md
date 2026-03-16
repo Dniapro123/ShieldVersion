@@ -127,4 +127,4 @@ The thesis validation covers (among others):
 ---
 
 ## Author
-Uladzislau Budziankou — Engineering Thesis (Wrocław University of Science and Technology, 2025)
+Uladzislau Budziankou — Engineering Thesis (Wrocław University of Science and Technology, 2026)
