@@ -193,7 +193,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.009201348, y: -0.02042842}
+  m_Offset: {x: 0.0077112615, y: -0.018312931}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -203,7 +203,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.5185026, y: 0.6208458}
+  m_Size: {x: 0.5155224, y: 0.6166148}
   m_EdgeRadius: 0
 --- !u!114 &-6154611892210705095
 MonoBehaviour:
@@ -328,7 +328,6 @@ MonoBehaviour:
   syncInterval: 0
   roomPrefabs:
   - {fileID: 2349251759251770945, guid: e300b3ba09a0b214d87faaea474fa582, type: 3}
-  - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
   - {fileID: 1660611071053008423, guid: 27a7d910d20fbc14a9831242eeaf2fe6, type: 3}
   mainRoomPrefabIndex: 0
   mainRoomNameHint: MainRoom
@@ -480,9 +479,9 @@ MonoBehaviour:
   firePoint: {fileID: 6524561479963940528}
   gunPivot: {fileID: 2858464413352501192}
   projectilePrefab: {fileID: 7513890016005855127, guid: 2ed24d87640f79245acec7946d9b764b, type: 3}
-  fireRate: 4
+  fireRate: 6
   burstSize: 10
-  burstCooldown: 1
+  burstCooldown: 1.5
   damage: 15
 --- !u!114 &1709143075928529584
 MonoBehaviour:

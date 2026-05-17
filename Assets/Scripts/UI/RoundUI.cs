@@ -74,7 +74,7 @@ public class RoundUI : MonoBehaviour
 
     public void BackToMenu()
     {
-        // Najczyściej: ustaw w NetworkManager -> Offline Scene = Menu
+        // Najczyściej: ustawia w NetworkManager -> Offline Scene = Menu
         var nm = NetworkManager.singleton;
         if (nm == null) return;
 

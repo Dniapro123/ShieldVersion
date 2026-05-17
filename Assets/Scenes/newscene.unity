@@ -1045,6 +1045,8 @@ MonoBehaviour:
   syncInterval: 0
   phase: 0
   baseRevealed: 0
+  attackerSpawnPos: {x: 0, y: 0, z: 0}
+  attackerSpawnSet: 0
 --- !u!114 &597721609
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1590,6 +1592,26 @@ MonoBehaviour:
     fixedAngleDeg: 0
     positionSnapStep: 0
   - prefab: {fileID: 5465357889621468136, guid: cf11a54157d7ddd47adbf50269545a62, type: 3}
+    limitGlobal: 3
+    maxPerRoom: 1
+    attach: 0
+    angleOffsetDeg: 0
+    allowRotate: 0
+    allowedRotSteps90: 00000000010000000200000003000000
+    forceFixedAngle: 1
+    fixedAngleDeg: 2
+    positionSnapStep: 0
+  - prefab: {fileID: 1099132245281722451, guid: a9aa08db41682b14db4d2b4736bad776, type: 3}
+    limitGlobal: 3
+    maxPerRoom: 1
+    attach: 2
+    angleOffsetDeg: 0
+    allowRotate: 0
+    allowedRotSteps90: 00000000010000000200000003000000
+    forceFixedAngle: 1
+    fixedAngleDeg: 2
+    positionSnapStep: 0
+  - prefab: {fileID: 6235141898098784503, guid: 6ef097aaca1c23643a506c6c573d6826, type: 3}
     limitGlobal: 3
     maxPerRoom: 1
     attach: 0

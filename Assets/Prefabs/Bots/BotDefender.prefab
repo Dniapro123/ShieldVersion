@@ -117,7 +117,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: -750047184722822154, guid: 1914d95466e3d4341a618c35a56d5f82, type: 3}
-  m_Color: {r: 0.7660377, g: 0.16621563, b: 0.16621563, a: 1}
+  m_Color: {r: 0.16470587, g: 0.7647059, b: 0.6982101, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -289,10 +289,10 @@ MonoBehaviour:
   spriteRenderer: {fileID: 7053622713564574923}
   requirePlayPhase: 1
   requireBaseRevealed: 1
-  patrolSpeed: 1.6
-  patrolDistance: -1
+  patrolSpeed: 2.6
+  patrolDistance: -2
   patrolBodyWidths: 2
-  detectionRange: 7
+  detectionRange: 9
   detectionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -300,7 +300,7 @@ MonoBehaviour:
   losMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  shootCooldown: 1
+  shootCooldown: 3
   damage: 50
   projectileSpeed: 6
   projectileLifeTime: 3

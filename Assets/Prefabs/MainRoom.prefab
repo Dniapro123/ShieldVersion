@@ -588,8 +588,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  maxHp: 200
-  hp: 200
+  maxHp: 300
+  hp: 300
   destroyed: 0
   aliveVisual: {fileID: 0}
   destroyedVisual: {fileID: 0}
