@@ -83,6 +83,28 @@ Configuration is largely exposed through scene-level config components (e.g., `B
 
 ---
 
+## Screenshots
+
+### Build Phase
+
+![Build Phase](docs/screenshots/build-phase.png)
+
+### Room Construction
+
+![Room Construction](docs/screenshots/room-construction.png)
+
+
+### Trap Placement and Defenders
+
+![Trap Placement and Defenders](docs/screenshots/traps-and-defenders.png.png)
+
+### Gameplay Phase
+
+![Gameplay Phase](docs/screenshots/gameplay-phase.png.png)
+
+### Lose Screen
+
+![Lose Screen](docs/screenshots/lose-screen.png.png)
 ## Requirements
 - **Unity 6** (recommended: `6000.0.62f1`)
 - Project configured for **URP 2D**
